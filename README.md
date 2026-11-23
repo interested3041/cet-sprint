@@ -5,6 +5,8 @@
 - 在线使用：https://interested3041.github.io/cet-sprint/
 - 离线使用：下载 `index.html` 双击即可，所有数据都在这一个文件里
 
+![登录页预览](docs/preview.png)
+
 ## 功能
 
 - **两个级别**：四级（20 天 × 100 词）、六级（20 天 × 100 词 + 每日小测），页头 👤 随时切换
@@ -48,6 +50,7 @@ server/              # 可选的自建账号服务器（零依赖）
 docs/
   DEPLOY.md          # 部署与令牌配置、排错
   ARCHITECTURE.md    # 技术实现与数据结构
+  preview.png        # 登录页截图
 CHANGELOG.md
 LICENSE
 ```
