@@ -74,7 +74,7 @@ header{position:static;background:transparent;border-bottom:1px solid var(--line
 .note{font-size:12.5px;color:var(--warn);margin-top:6px;background:#fffbeb;padding:6px 9px;border-radius:7px}
 .hidebox{margin-top:8px}
 .revealbtn{border:1px dashed var(--brand);background:transparent;color:var(--brand);font-size:12px;padding:5px 12px;border-radius:8px;cursor:pointer;font-weight:600}
-.hidden{display:none}
+.hidden{display:none!important}
 .marks{display:flex;gap:6px;margin-top:9px}
 .mk{border:1px solid var(--line);background:var(--card);font-size:12px;padding:4px 12px;border-radius:8px;cursor:pointer;font-weight:600}
 .mk.yes:hover,.mk.yes.on{background:var(--ok);color:#fff;border-color:var(--ok)}
@@ -235,9 +235,10 @@ input,textarea,button{font-family:inherit}
    <div class="g-lv" data-lv="cet6" onclick="gatePick(this)">六级<small>20 天 · 1200 词 + 小测</small></div>
   </div>
   <button class="g-btn" id="gGo" onclick="gateGo()">登录并开始背诵</button>
+  <button class="g-ghost" onclick="gateGuest()">游客进入（免账号，数据存本机）</button>
   <button class="g-ghost g-hidden" id="gReg" onclick="gateReg()">没有服务器账号？注册一个</button>
   <div class="g-msg" id="gMsg"></div>
-  <div class="g-foot">给 2-3 个朋友用：每人用自己的 GitHub 令牌，数据互不干扰。</div>
+  <div class="g-foot">只想在这台设备背，直接点游客；换设备想自动同步再登录。朋友各用各的令牌，数据互不干扰。</div>
  </div>
 </div>
 
@@ -258,7 +259,7 @@ input,textarea,button{font-family:inherit}
 <div class="wrap">
   <div class="days" id="days"></div>
   <div class="qbanner hidden" id="qbanner">
-    <span>📅 <b id="qbTitle"></b> 今日小测还没做 · 4 题约 10 分钟</span>
+    <span>📅 <b id="qbTitle"></b> 今日小测还没做 · <span id="qbMeta">4 题约 10 分钟</span></span>
     <button class="btn" onclick="gotoQuiz()">去作答</button>
     <button class="btn ghost" onclick="hideBanner()">稍后</button>
   </div>
@@ -345,18 +346,23 @@ window.cloudPush=(function(){var timer=null,pending=null;
  };
 })();
 window.openProfile=function(){
- var u=localStorage.getItem('cet_user')||'未登录',tok=localStorage.getItem('cet_token'),gh=localStorage.getItem('gh_token');
- var other=(LVN==='四级')?'六级':'四级';
- var h='<div class="section"><h2>👤 '+esc(u)+'</h2>'
-  +'<p style="color:var(--sub);font-size:13px">当前：'+META.level+'冲刺 · '+(tok?'已连接账号，进度自动同步':'未登录，数据只在本机')+'</p>'
+ var tok=localStorage.getItem('cet_token'),gh=localStorage.getItem('gh_token');
+ var guest=localStorage.getItem('guest_mode')==='1';
+ var u=localStorage.getItem('cet_user')||(guest?'游客':'未登录');
+ var qlv=(location.search.match(/[?&]level=(cet4|cet6)/)||[])[1];var cur=qlv||localStorage.getItem('cet_level')||'cet6', curName=(cur==='cet4'?'四级':'六级');
+ var other=(cur==='cet4')?'六级':'四级';
+ function esc2(x){return String(x==null?'':x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+ var st=(gh||tok)?'已连接账号，进度自动同步':(guest?'游客模式，数据只在本机，可导出/生成同步链接':'未登录，数据只在本机');
+ var h='<div class="section"><h2>👤 '+esc2(u)+'</h2>'
+  +'<p style="color:var(--sub);font-size:13px">当前：'+curName+'冲刺 · '+st+'</p>'
   +'<div class="qactions"><button class="btn" onclick="switchLevel(\''+(other==='四级'?'cet4':'cet6')+'\')">切换到'+other+'</button></div>'
-  +((gh||tok)?'<div class="qactions"><button class="btn ghost" onclick="logout()">退出登录</button></div>':'<div class="qactions"><button class="btn ghost" onclick="location.href=\'index.html\'">去登录</button></div>')
-  +'<p style="color:var(--sub);font-size:12px;margin-top:10px">换设备：同一账号登录，会自动读回云端的进度。</p></div>';
+  +((gh||tok)?'<div class="qactions"><button class="btn ghost" onclick="logout()">退出登录</button></div>':'<div class="qactions"><button class="btn ghost" onclick="showGate()">登录 / 换设备同步</button></div>')
+  +'<p style="color:var(--sub);font-size:12px;margin-top:10px">游客进度会在登录时合并到云端；只想临时换设备就用「☁ 同步」导出或生成链接。</p></div>';
  document.getElementById('profileBody').innerHTML=h;
  document.getElementById('profileModal').classList.add('open');
 };
 window.closeProfile=function(){document.getElementById('profileModal').classList.remove('open');};
-window.logout=function(){localStorage.removeItem('cet_token');localStorage.removeItem('gh_token');localStorage.removeItem('gh_gist_id');localStorage.removeItem('cet_user');location.href='?';};
+window.logout=function(){localStorage.removeItem('cet_token');localStorage.removeItem('gh_token');localStorage.removeItem('gh_gist_id');localStorage.removeItem('cet_user');localStorage.removeItem('guest_mode');location.href='?';};
 window.switchLevel=function(lv){
  localStorage.setItem('cet_level',lv);
  if(localStorage.getItem('gh_token')){
@@ -500,6 +506,10 @@ window.goCat=function(c){if(c===state.cat)return;SCROLL[state.day+':'+state.cat]
 
 /* ---------- tip ---------- */
 function renderTip(){
+  if(state.cat==='quiz'&&LV==='cet4'){
+    document.getElementById('tip').innerHTML='<b>四级小测</b> 看中文选单词，先自己判断，不确定就标记；翻译写完再点提交，提交后才显示参考答案。';
+    return;
+  }
   if(state.cat==='quiz'){
     document.getElementById('tip').innerHTML='<b>做题要求</b> 听力先盲听 2 遍再选；阅读限时 90 秒；翻译写完再看参考；写作先写后对照。提交后自动判分，答案随时可回看。';
     return;
@@ -629,11 +639,56 @@ function renderTask(){
 }
 
 /* ---------- 每日小测 ---------- */
-function dailyArr(){return LV==='cet4'?[]:(window.CET6_DAILY||[]);}
+var CET4_TRANS=[
+{cn:"图书馆把开放时间延长到了午夜，方便学生准备期末考试。",ref:"The library has extended its opening hours until midnight to help students prepare for final exams.",keys:["library","extended","midnight","final exams"],note:"extend...until 表示把时间延长到；to help 作目的状语。"},
+{cn:"与其一遍遍重读笔记，不如用自测来检查自己是否真的记住了。",ref:"Instead of rereading your notes again and again, use self-testing to check whether you have really remembered them.",keys:["Instead of","self-testing","whether","remembered"],note:"Instead of 后接动名词；whether 引导宾语从句。"},
+{cn:"每天保证七小时睡眠，比考前熬夜复习更能提高成绩。",ref:"Getting seven hours of sleep every day improves your grades more than staying up late before the exam.",keys:["seven hours","sleep","improves","staying up late"],note:"动名词短语作主语，谓语用单数 improves；more than 比较。"},
+{cn:"手机既能帮我们查资料，也容易让人分心，所以学习时应把它放远一点。",ref:"A phone can help us look up information, but it also easily distracts us, so we should keep it away while studying.",keys:["look up","distracts","keep it away","while studying"],note:"but 连接并列句；while studying 是时间状语从句的省略。"},
+{cn:"共享单车让短途出行更方便，但也带来了乱停乱放的问题。",ref:"Shared bikes make short trips more convenient, but they also bring the problem of parking anywhere.",keys:["Shared bikes","short trips","convenient","parking"],note:"make + 宾语 + 形容词；动名词 parking 作介词宾语。"},
+{cn:"春节时，家人会聚在一起吃团圆饭，并给孩子们压岁钱。",ref:"During the Spring Festival, family members get together for a reunion dinner and give children lucky money.",keys:["Spring Festival","get together","reunion dinner","lucky money"],note:"during 表示时间；get together for 表示聚在一起做某事。"},
+{cn:"如今越来越多的人选择坐高铁旅行，因为它既快又舒适。",ref:"Nowadays more and more people choose to travel by high-speed train because it is fast and comfortable.",keys:["more and more","high-speed train","because","comfortable"],note:"more and more 表示越来越多；because 引导原因状语从句。"},
+{cn:"实习让学生了解真实的工作环境，并帮助他们决定未来的职业方向。",ref:"Internships let students understand the real working environment and help them decide their future career direction.",keys:["Internships","working environment","decide","career direction"],note:"let sb. do 和 help sb. (to) do 后接动词原形。"},
+{cn:"不吃早餐就去上课，很容易在上午感到疲倦。",ref:"Going to class without breakfast makes it easy to feel tired in the morning.",keys:["without breakfast","feel tired","in the morning"],note:"动名词短语作主语；make it easy to do 中 it 是形式宾语。"},
+{cn:"跑步是最简单的运动之一，每天二十分钟就能改善心情。",ref:"Running is one of the simplest exercises, and twenty minutes a day can improve your mood.",keys:["Running","one of","twenty minutes","improve your mood"],note:"one of 后接复数名词；动名词 Running 作主语。"},
+{cn:"室友之间互相体谅，才能避免因为小事争吵。",ref:"Only when roommates understand each other can they avoid quarreling over small things.",keys:["Only when","roommates","avoid","quarreling"],note:"Only when 置于句首，主句用部分倒装 can they...；avoid doing。"},
+{cn:"垃圾分类并不难，关键是养成习惯。",ref:"Sorting waste is not difficult; the key is to form a habit.",keys:["Sorting waste","not difficult","the key","form a habit"],note:"动名词作主语；分号连接两个独立分句。"},
+{cn:"读纸质书时，我们更容易静下心来，不被消息提醒打断。",ref:"When reading paper books, we find it easier to calm down and not be interrupted by notifications.",keys:["paper books","calm down","interrupted","notifications"],note:"find it easier to do；be interrupted by 被动语态。"},
+{cn:"面对大量网络信息，我们应该先判断来源是否可靠。",ref:"Faced with a large amount of online information, we should first judge whether the source is reliable.",keys:["Faced with","online information","whether","reliable"],note:"Faced with 过去分词作状语；whether 引导宾语从句。"},
+{cn:"参加社区志愿服务，不仅能帮助别人，也能让自己学到很多。",ref:"Taking part in community volunteer service not only helps others but also teaches you a lot.",keys:["Taking part in","volunteer service","not only","teaches"],note:"not only...but also... 连接并列成分；动名词作主语。"},
+{cn:"下雨天出门记得带伞，免得淋湿后感冒。",ref:"Remember to take an umbrella when going out on a rainy day, so that you won't get wet and catch a cold.",keys:["Remember to","umbrella","rainy day","catch a cold"],note:"remember to do 表示记得去做；so that 引导目的状语从句。"},
+{cn:"把任务写进待办清单，比一直记在脑子里更可靠。",ref:"Writing tasks on a to-do list is more reliable than keeping them in your head.",keys:["to-do list","more reliable","keeping","in your head"],note:"动名词作主语；比较结构前后保持平行。"},
+{cn:"整理错题本的目的，是找出自己反复出错的地方。",ref:"The purpose of keeping a wrong-question notebook is to find out where you repeatedly make mistakes.",keys:["purpose","wrong-question notebook","find out","repeatedly"],note:"The purpose of ... is to ... 表语用不定式；where 引导宾语从句。"},
+{cn:"每天开口练五分钟英语，比只看不说进步更快。",ref:"Practicing spoken English for five minutes every day brings faster progress than only reading without speaking.",keys:["Practicing","spoken English","faster progress","without speaking"],note:"动名词作主语；than 前后结构对称。"},
+{cn:"坚持二十天并不容易，但每天完成一点，就会看到变化。",ref:"Sticking to the plan for twenty days is not easy, but finishing a little every day will bring changes.",keys:["Sticking to","twenty days","not easy","bring changes"],note:"动名词短语作主语；but 连接并列分句。"}
+];
+function hs(x){var h=2166136261,i;x=String(x||'');for(i=0;i<x.length;i++){h^=x.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
+function shortMean(m){var t=String(m||'');t=t.split('；')[0].split(';')[0].split('，')[0].split(',')[0].trim();return t.length>26?t.slice(0,26):t;}
+function meanClash(a,b){a=String(a||'');b=String(b||'');if(!a||!b)return true;if(a===b||a.indexOf(b)>=0||b.indexOf(a)>=0)return true;if(a.charAt(0)===b.charAt(0))return true;for(var i=0;i<a.length-1;i++){if(b.indexOf(a.substr(i,2))>=0)return true;}return false;}
+var _cet4Daily=null;
+function buildCet4Daily(){
+  var all=[],out=[];
+  (window.CET4_DATA?window.CET4_DATA.days:[]).forEach(function(d){ (d.reading||[]).forEach(function(it){ all.push(it); }); });
+  (window.CET4_DATA?window.CET4_DATA.days:[]).forEach(function(d,di){
+    var list=(d.reading||[]).slice().sort(function(a,b){return hs(a.w+di)-hs(b.w+di);});
+    var picked=list.slice(0,8);
+    var vocab=picked.map(function(it,qi){
+      var opts=[it.w];
+      var pool=all.slice().sort(function(a,b){return hs(a.w+di+qi)-hs(b.w+di+qi);});
+      var k;
+      for(k=0;k<pool.length&&opts.length<4;k++){var c=pool[k];if(c.w===it.w)continue;if(!meanClash(it.m,c.m))opts.push(c.w);}
+      for(k=0;k<pool.length&&opts.length<4;k++){var c2=pool[k];if(c2.w!==it.w&&opts.indexOf(c2.w)<0)opts.push(c2.w);}
+      opts.sort(function(a,b){return hs(a+di+qi)-hs(b+di+qi);});
+      return {q:'“'+shortMean(it.m)+'” 最接近哪个单词？',o:opts,a:opts.indexOf(it.w),why:it.w+' /'+(it.ph||'')+'/ '+it.m};
+    });
+    out.push({day:d.day,kind:'cet4',scope:'四级 · 词汇速测 + 翻译（D'+d.day+'）',vocab:vocab,translation:CET4_TRANS[di%CET4_TRANS.length]});
+  });
+  return out;
+}
+function dailyArr(){ if(LV==='cet4'){ if(!_cet4Daily)_cet4Daily=buildCet4Daily(); return _cet4Daily; } return (window.CET6_DAILY||[]); }
 function findQuiz(day){var a=dailyArr();for(var i=0;i<a.length;i++){if(a[i].day===day)return a[i];}return null;}
 function curQuiz(){return findQuiz(DAYS[state.day].day);}
 function todayQuiz(){var t=todayStr();for(var i=0;i<DAYS.length;i++){if(DAYS[i].date===t)return findQuiz(DAYS[i].day);}return null;}
-function dayRec(day){var d=state.daily[day];if(!d){d={l:[],r:[],t:'',w:''};state.daily[day]=d;}return d;}
+function dayRec(day){var d=state.daily[day];if(!d){d={l:[],r:[],t:'',w:'',v:[]};state.daily[day]=d;}return d;}
 function letter(i){return 'ABCD'.charAt(i);}
 function normT(s){return String(s==null?'':s).toLowerCase();}
 function keyHit(t,k){return normT(t).indexOf(String(k).toLowerCase())>=0;}
@@ -673,9 +728,50 @@ function writeResult(W,ans){
     +'<div class="qwhy">💡 '+esc(W.tip)+'</div>';
 }
 
+
+function gradeOf4(q,a){
+  var v=0,t=0,i;
+  q.vocab.forEach(function(it,i){if(a.v&&a.v[i]===it.a)v++;});
+  q.translation.keys.forEach(function(k){if(keyHit(a.t,k))t++;});
+  var total=q.vocab.length+q.translation.keys.length,got=v+t;
+  return {v:v,t:t,got:got,total:total,pct:total?Math.round(got/total*100):0};
+}
+function scoreHtml4(q,a){
+  var g=gradeOf4(q,a),col=g.pct>=80?'#065f46':g.pct>=50?'#92400e':'#991b1b';
+  return '<div class="qscore">本次 <b style="color:'+col+'">'+g.pct+'%</b>（'+g.got+'/'+g.total+'） · 词汇 '+g.v+'/'+q.vocab.length+' · 翻译 '+g.t+'/'+q.translation.keys.length+'</div>';
+}
+function renderQuiz4(q,d){
+  var el=document.getElementById('cards'),a=dayRec(q.day),sub=!!a.submitted,h;
+  if(d.date>todayStr()){
+    el.innerHTML='<div class="quizbox"><div class="qhead"><b>D'+q.day+' 小测</b><span>'+esc(d.date)+'</span></div><div class="empty">🔒 当天开放，避免提前看题。<br>'+esc(d.date.slice(5))+' 再来做这套。</div></div>';
+    return;
+  }
+  h='<div class="quizbox"><div class="qhead"><b>D'+q.day+' 小测</b><span>'+esc(d.date)+' · '+esc(q.scope)+'</span></div>';
+  h+=sub?scoreHtml4(q,a):'<div class="qhint">看中文选单词，先自己做；翻译写完再提交，提交后才显示答案。</div>';
+  h+='<div class="qblock"><div class="qh"><span class="qtag r">词汇</span>'+q.vocab.length+' 题 · 看中文选单词</div>';
+  q.vocab.forEach(function(it,i){
+    h+='<div class="qitem"><div class="qn">Q'+(i+1)+'. '+esc(it.q)+'</div>';
+    it.o.forEach(function(o,oi){h+=optHtml(q.day,'v',i,oi,letter(oi)+'. '+esc(o),a.v?a.v[i]:null,sub,it.a);});
+    if(sub)h+=qwhyHtml(it,a.v?a.v[i]:null);
+    h+='</div>';
+  });
+  h+='</div>';
+  h+='<div class="qblock"><div class="qh"><span class="qtag t">翻译</span>中译英</div>'
+    +'<div class="qitem"><div class="qn">'+esc(q.translation.cn)+'</div>'
+    +'<textarea class="qinput" id="ta_t" placeholder="写出英文译文…"'+(sub?' disabled':'')+' oninput="draftT('+q.day+',this.value)">'+esc(a.t)+'</textarea>';
+  if(sub)h+=transResult(q.translation,a.t);
+  h+='</div></div>';
+  h+='<div class="qactions">';
+  if(sub)h+='<button class="btn ghost" onclick="redoQuiz('+q.day+')">↺ 重新作答</button>';
+  else h+='<button class="btn" onclick="submitQuiz('+q.day+')">提交并判分</button>';
+  h+='</div></div>';
+  el.innerHTML=h;
+}
+
 function renderQuiz(){
   var el=document.getElementById('cards'),q=curQuiz(),d=DAYS[state.day];
   if(!q){el.innerHTML='<div class="empty">本日暂无小测</div>';return;}
+  if(q.kind==='cet4'){renderQuiz4(q,d);return;}
   if(d.date>todayStr()){
     el.innerHTML='<div class="quizbox"><div class="qhead"><b>D'+q.day+' 小测</b><span>'+esc(d.date)+'</span></div><div class="empty">🔒 当天开放，避免提前看题。<br>'+esc(d.date.slice(5))+' 再来做这套。</div></div>';
     return;
@@ -733,6 +829,14 @@ window.draftW=function(day,v){dayRec(day).w=v;save();};
 window.submitQuiz=function(day){
   var q=findQuiz(day);if(!q)return;
   var a=dayRec(day),i;
+  if(q.kind==='cet4'){
+    var vv=[];
+    for(i=0;i<q.vocab.length;i++){var vr=document.querySelector('input[name="v'+day+'_'+i+'"]:checked');vv[i]=vr?parseInt(vr.value,10):null;}
+    a.v=vv;
+    var tt4=document.getElementById('ta_t');if(tt4)a.t=tt4.value;
+    a.submitted=true;a.at=new Date().toISOString();
+    save();renderQuiz();updateProg();renderBanner();return;
+  }
   for(i=0;i<q.listening.q.length;i++){
     var lr=document.querySelector('input[name="l'+day+'_'+i+'"]:checked');
     a.l[i]=lr?parseInt(lr.value,10):null;
@@ -759,6 +863,7 @@ function renderBanner(){
   var a=state.daily[q.day];
   if(a&&a.submitted){b.classList.add('hidden');return;}
   document.getElementById('qbTitle').textContent='D'+q.day;
+  var qm=document.getElementById('qbMeta');if(qm)qm.textContent=LV==='cet4'?'8 个词 + 1 段翻译 · 约 8 分钟':'4 题约 10 分钟';
   b.classList.remove('hidden');
 }
 window.gotoQuiz=function(){goCat('quiz');if(window.scrollTo)window.scrollTo({top:0,behavior:'smooth'});};
@@ -786,6 +891,16 @@ function quizErrors(){
     if(!a||!a.submitted)continue;
     var q=findQuiz(parseInt(dk,10));
     if(!q)continue;
+    if(q.kind==='cet4'){
+      q.vocab.forEach(function(it,i){
+        var pick=a.v?a.v[i]:null;
+        if(pick!==it.a)out.push({day:q.day,label:'词汇 Q'+(i+1),stem:it.q,mine:pick==null?'未选':letter(pick)+'. '+it.o[pick],right:letter(it.a)+'. '+it.o[it.a],why:it.why});
+      });
+      q.translation.keys.forEach(function(k){
+        if(!keyHit(a.t,k))out.push({day:q.day,label:'翻译缺词',stem:k,mine:'没写到',right:k,why:q.translation.note});
+      });
+      continue;
+    }
     q.listening.q.forEach(function(it,i){
       var pick=a.l?a.l[i]:null;
       if(pick!==it.a)out.push({day:q.day,label:'听力 Q'+(i+1),stem:it.q,mine:pick==null?'未选':letter(pick)+'. '+it.o[pick],right:letter(it.a)+'. '+it.o[it.a],why:it.why});
@@ -887,13 +1002,13 @@ window.errQuizGo=function(day){
   goCat('quiz');
 };
 window.exportWrong=function(){
-  var ws=wrongWords(),qs=quizErrors(),lines=['六级错词本 '+todayStr(),''];
+  var ws=wrongWords(),qs=quizErrors(),lines=[LVN+'错词本 '+todayStr(),''];
   lines.push('【未攻克单词 '+ws.length+'】');
   ws.forEach(function(x){lines.push(x.it.w+'  /'+(x.it.ph||'')+'/  '+x.it.m+'   (D'+x.day+' '+CATNAME[x.cat]+'，第'+((x.sched.s||0)+1)+'轮，'+dueText(x.sched.due)+')');});
   lines.push('','【小测错题 '+qs.length+'】');
   qs.forEach(function(e){lines.push('D'+e.day+' '+e.label+'：'+e.stem+' | 你的：'+e.mine+' | 正确：'+e.right);});
   var blob=new Blob([lines.join('\r\n')],{type:'text/plain;charset=utf-8'});
-  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='六级错词本_'+todayStr()+'.txt';a.click();
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=LVN+'错词本_'+todayStr()+'.txt';a.click();
   setTimeout(function(){URL.revokeObjectURL(a.href);},1000);
 };
 
@@ -932,7 +1047,7 @@ window.setUnknown=function(v){state.unknown=v;renderCards();updateProg();};
 /* ---------- 导出/导入 ---------- */
 window.exportProg=function(){
   var blob=new Blob([JSON.stringify({marks:state.marks,daily:state.daily,sched:state.sched,acct:state.acct,exported:new Date().toISOString()},null,2)],{type:'application/json'});
-  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='六级背诵进度_'+todayStr()+'.json';a.click();
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=META.level+'背诵进度_'+todayStr()+'.json';a.click();
   setTimeout(function(){URL.revokeObjectURL(a.href);},1000);
 };
 window.importProg=function(inp){
@@ -1024,7 +1139,7 @@ function tryApply(str,ask){
 window.openSync=function(){
   buildSlots();
   var h='<div class="section"><h2>☁ 同步进度</h2>'
-   +'<p style="color:var(--sub);font-size:13px;line-height:1.8">这个网页是纯静态托管，没有服务器账号。所以把进度打包成一条链接当"云端"用：旧设备生成链接 → 发到微信文件传输助手 → 新设备点开链接，进度自动恢复。</p>'
+   +'<p style="color:var(--sub);font-size:13px;line-height:1.8">没有账号也能同步：旧设备点「生成同步链接」或导出 JSON，发到新设备打开/导入即可。登录后才会自动云同步；游客数据在登录时会合并，不会丢。</p>'
    +'<div class="qactions"><button class="btn" onclick="genLink()">🔗 生成同步链接</button><button class="btn ghost" onclick="shareLink()">分享给微信</button><button class="btn ghost" onclick="copyLink()">复制</button></div>'
    +'<div id="linkBox" style="margin-top:8px;font-size:12px;color:var(--sub);line-height:1.7"></div>'
    +'<h4>从链接 / 同步码恢复</h4>'
@@ -1137,7 +1252,9 @@ renderDays();renderTabs();renderTip();renderCards();renderTask();updateProg();re
 <button class="fab" id="fabTop" onclick="toTop()" title="回到顶部">↑</button>
 
 <script>
-var gMode='cet4', gWhich='gh';
+var gMode=(function(){var l=localStorage.getItem('cet_level');return l==='cet6'?'cet6':'cet4';})(), gWhich='gh';
+window.gateGuest=function(){localStorage.setItem('guest_mode','1');localStorage.setItem('cet_level',gMode);location.href='?level='+gMode;};
+window.showGate=function(){gMode=(localStorage.getItem('cet_level')==='cet4'?'cet4':'cet6');document.querySelectorAll('.g-lv').forEach(function(x){x.classList.toggle('on',x.dataset.lv===gMode);});var g=document.getElementById('gate');if(g)g.classList.add('open');gateMsg('');gateBusy(false);};
 function gateTab(t){gWhich=t;document.querySelectorAll('.g-tabs2 div').forEach(function(x){x.classList.toggle('on',x.dataset.tab===t);});
  document.getElementById('gPaneGh').classList.toggle('g-hidden',t!=='gh');
  document.getElementById('gPaneSv').classList.toggle('g-hidden',t!=='sv');
@@ -1149,6 +1266,13 @@ function gApi(path,opt,token){
   opt=opt||{};opt.headers={'Authorization':'Bearer '+token,'Accept':'application/vnd.github+json','Content-Type':'application/json'};
   return fetch('https://api.github.com'+path,opt).then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error(j.message||('HTTP '+r.status));return j;});});
 }
+function mergeProg(local,cloud){
+ local=local||{};cloud=cloud||{};
+ return {marks:Object.assign({},cloud.marks||{},local.marks||{}),
+  daily:Object.assign({},cloud.daily||{},local.daily||{}),
+  sched:Object.assign({},cloud.sched||{},local.sched||{}),
+  acct:local.acct||cloud.acct||''};
+}
 async function gateGh(){
   var token=document.getElementById('ghToken').value.trim();
   if(!token)throw new Error('先贴上令牌');
@@ -1158,6 +1282,13 @@ async function gateGh(){
   var hit=(list||[]).filter(function(g){return g.files&&g.files[FILE];})[0];
   var data={mode:gMode,cet6:{},cet4:{}};
   if(hit){var g=await gApi('/gists/'+hit.id,{token:token});try{data=JSON.parse(g.files[FILE].content)||data;}catch(e){}}
+  try{
+   var l6=JSON.parse(localStorage.getItem('cet6_progress_v1')||'{}');
+   var l4=JSON.parse(localStorage.getItem('cet4_progress_v1')||'{}');
+   data.cet6=mergeProg(l6,data.cet6||{});
+   data.cet4=mergeProg(l4,data.cet4||{});
+  }catch(e){}
+  localStorage.removeItem('guest_mode');
   localStorage.setItem('gh_token',token);
   localStorage.setItem('gh_user',me.login);
   localStorage.setItem('cet_user',me.login);
@@ -1166,6 +1297,7 @@ async function gateGh(){
   localStorage.setItem('cet4_progress_v1',JSON.stringify(data.cet4||{}));
   localStorage.setItem('cet_level',gMode);
   if(hit)localStorage.setItem('gh_gist_id',hit.id);else localStorage.removeItem('gh_gist_id');
+  try{await ghSave(gMode,data[gMode]);}catch(e){}
   if(!hit){
     var body={description:'CET 冲刺进度（勿删）',public:false,files:{}};
     body.files[FILE]={content:JSON.stringify(data)};
@@ -1178,6 +1310,7 @@ async function gateSv(reg){
   var r=await fetch(reg?'/api/register':'/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
   var j=await r.json().catch(function(){return {error:'服务器不可用'};});
   if(!r.ok)throw new Error(j.error||('HTTP '+r.status));
+  localStorage.removeItem('guest_mode');
   localStorage.setItem('cet_token',j.token);localStorage.setItem('cet_user',j.user);localStorage.setItem('cet_level',j.mode||gMode);
   var d=await fetch('/api/data',{headers:{Authorization:'Bearer '+j.token}}).then(function(x){return x.json();});
   localStorage.setItem('cet6_progress_v1',JSON.stringify((d.data&&d.data.cet6)||{}));
@@ -1188,13 +1321,15 @@ async function gateGo(){gateMsg('');gateBusy(true);try{ if(gWhich==='gh')await g
 async function gateReg(){gateMsg('');gateBusy(true);try{await gateSv(true);}catch(e){gateMsg(e.message);gateBusy(false);}}
 (function(){
  if(location.hostname.indexOf('github.io')>=0){var tb=document.querySelector('.g-tabs2');if(tb)tb.style.display='none';gWhich='gh';}
- var gh=localStorage.getItem('gh_token'),sv=localStorage.getItem('cet_token');
- if(!gh&&!sv){document.getElementById('gate').classList.add('open');return;}
+ var gh=localStorage.getItem('gh_token'),sv=localStorage.getItem('cet_token'),guest=localStorage.getItem('guest_mode')==='1';
+ if(!gh&&!sv&&!guest){document.getElementById('gate').classList.add('open');return;}
  if(location.search.indexOf('level=')<0){location.href='?level='+(localStorage.getItem('cet_level')||'cet6');}
 })();
 </script>
 </body>
 </html>
+
+
 
 
 
