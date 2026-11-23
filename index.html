@@ -217,11 +217,11 @@ input,textarea,button{font-family:inherit}
  <div class="g-card">
   <div class="g-brand">四六级冲刺背诵</div>
   <div class="g-slogan">一个账号，两台设备，进度自动跟着走</div>
-  <div class="g-tabs2"><div class="on" data-tab="gh" onclick="gateTab('gh')">GitHub 直连</div><div data-tab="sv" onclick="gateTab('sv')">自建服务器</div></div>
+  <div class="g-tabs2"><div class="on" data-tab="gh" onclick="gateTab('gh')">GitHub 直连</div><div data-tab="sv" id="gTabSv" onclick="gateTab('sv')">自建服务器</div></div>
   <div id="gPaneGh">
-   <label class="g-label">GitHub 令牌（只存这台设备）</label>
+   <label class="g-label">GitHub 令牌（就是登录账号，只存这台设备）</label>
    <input class="g-input" id="ghToken" type="password" autocomplete="off" placeholder="ghp_… 或 github_pat_…">
-   <div class="g-foot">GitHub → Settings → Developer settings → Fine-grained tokens，只勾 <b>Gists</b> 读写。进度存在你自己的私密 Gist，换设备贴同一个令牌就读回。</div>
+   <div class="g-foot">GitHub → Settings → Developer settings → Fine-grained tokens，只勾 <b>Gists</b> 读写。进度存在你自己的私密 Gist，换设备贴同一个令牌就读回。<br>没部署服务器就只用这一栏，朋友也各自生成自己的令牌。</div>
   </div>
   <div id="gPaneSv" class="g-hidden">
    <label class="g-label">账号</label>
@@ -1187,6 +1187,7 @@ async function gateSv(reg){
 async function gateGo(){gateMsg('');gateBusy(true);try{ if(gWhich==='gh')await gateGh();else await gateSv(false);}catch(e){gateMsg(e.message);gateBusy(false);}}
 async function gateReg(){gateMsg('');gateBusy(true);try{await gateSv(true);}catch(e){gateMsg(e.message);gateBusy(false);}}
 (function(){
+ if(location.hostname.indexOf('github.io')>=0){var st=document.getElementById('gTabSv');if(st)st.style.display='none';}
  var gh=localStorage.getItem('gh_token'),sv=localStorage.getItem('cet_token');
  if(!gh&&!sv){document.getElementById('gate').classList.add('open');return;}
  if(location.search.indexOf('level=')<0){location.href='?level='+(localStorage.getItem('cet_level')||'cet6');}
@@ -1194,3 +1195,4 @@ async function gateReg(){gateMsg('');gateBusy(true);try{await gateSv(true);}catc
 </script>
 </body>
 </html>
+
