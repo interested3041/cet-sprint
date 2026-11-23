@@ -327,24 +327,31 @@ function syncOk(){
 function syncFail(e){
   try{localStorage.setItem('sync_error',String((e&&e.message)||e||'同步失败').slice(0,180));}catch(x){}
 }
+function gistSaveBody(body,gid,retried){
+  if(gid){
+    return ghReq('/gists/'+gid,'PATCH',{files:body.files}).catch(function(e){
+      if(!retried&&String((e&&e.message)||'').indexOf('404')>=0){
+        localStorage.removeItem('gh_gist_id');
+        return gistSaveBody(body,null,true);
+      }
+      throw e;
+    });
+  }
+  return ghReq('/gists?per_page=100','GET').then(function(list){
+    var hit=(list||[]).filter(function(g){return g.files&&g.files[GFILE];})[0];
+    if(hit){localStorage.setItem('gh_gist_id',hit.id);return ghReq('/gists/'+hit.id,'PATCH',{files:body.files});}
+    return ghReq('/gists','POST',body).then(function(g){if(g&&g.id)localStorage.setItem('gh_gist_id',g.id);});
+  });
+}
 function ghSave(level,payload){
   var all={mode:localStorage.getItem('cet_level')||'cet6',cet6:{},cet4:{}};
   try{all.cet6=JSON.parse(localStorage.getItem('cet6_progress_v1')||'{}');all.cet4=JSON.parse(localStorage.getItem('cet4_progress_v1')||'{}');}catch(e){}
   all[level]=payload;
   var body={description:GDESC,public:false,files:{}};
   body.files[GFILE]={content:JSON.stringify(all)};
-  var gid=localStorage.getItem('gh_gist_id');
-  var job;
-  if(gid){
-    job=ghReq('/gists/'+gid,'PATCH',{files:body.files});
-  }else{
-    job=ghReq('/gists?per_page=100','GET').then(function(list){
-      var hit=(list||[]).filter(function(g){return g.files&&g.files[GFILE];})[0];
-      if(hit){localStorage.setItem('gh_gist_id',hit.id);return ghReq('/gists/'+hit.id,'PATCH',{files:body.files});}
-      return ghReq('/gists','POST',body).then(function(g){if(g&&g.id)localStorage.setItem('gh_gist_id',g.id);});
-    });
-  }
-  return job.then(function(){syncOk();return true;}).catch(function(e){syncFail(e);return false;});
+  return gistSaveBody(body,localStorage.getItem('gh_gist_id'),false)
+    .then(function(){syncOk();return true;})
+    .catch(function(e){syncFail(e);return false;});
 }
 window.cloudPush=(function(){var timer=null,pending=null;
  return function(level,payload){
@@ -364,7 +371,7 @@ window.cloudPush=(function(){var timer=null,pending=null;
 })();
 window.cloudFlush=function(){
  if(!localStorage.getItem('gh_token'))return;
- try{if(typeof LV!=='undefined'&&typeof payload==='function')ghSave(LV,payload());}catch(e){}
+ try{var lv=window.CET_LV,fn=window.CET_PAYLOAD;if(lv&&typeof fn==='function')ghSave(lv,fn());}catch(e){}
 };
 window.addEventListener('pagehide',function(){try{window.cloudFlush();}catch(e){}});
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden'){try{window.cloudFlush();}catch(e){}}});
@@ -409,13 +416,15 @@ window.pullCloud=async function(){
 };
 window.pushCloud=async function(){
  if(!localStorage.getItem('gh_token')){alert('先登录 GitHub 账号');return;}
- var ok=await ghSave(LV,payload());
+ var lv=window.CET_LV,fn=window.CET_PAYLOAD;
+ if(!lv||typeof fn!=='function'){alert('页面还没加载完，刷新后再试');return;}
+ var ok=await ghSave(lv,fn());
  if(ok){alert('已上传到云端');}else{alert('上传失败：'+(localStorage.getItem('sync_error')||'检查网络或重新登录'));}
  openProfile();
 };
 
 window.closeProfile=function(){document.getElementById('profileModal').classList.remove('open');};
-window.logout=function(){localStorage.removeItem('cet_token');localStorage.removeItem('gh_token');localStorage.removeItem('gh_gist_id');localStorage.removeItem('cet_user');localStorage.removeItem('guest_mode');location.href='?';};
+window.logout=function(){localStorage.removeItem('cet_token');localStorage.removeItem('gh_token');localStorage.removeItem('gh_gist_id');localStorage.removeItem('cet_user');localStorage.removeItem('guest_mode');localStorage.removeItem('sync_last');localStorage.removeItem('sync_error');localStorage.removeItem('gh_scope');location.href='?';};
 window.switchLevel=function(lv){
  localStorage.setItem('cet_level',lv);
  if(localStorage.getItem('gh_token')){
@@ -462,6 +471,7 @@ var state={day:0,cat:'reading',test:false,shuffle:false,unknown:false,marks:{},r
 
 function load(){try{var s=JSON.parse(localStorage.getItem(STORE));if(s&&s.marks)state.marks=s.marks;if(s&&s.daily)state.daily=s.daily;if(s&&s.sched)state.sched=s.sched;if(s&&s.acct)state.acct=s.acct;state.acct=localStorage.getItem('cet6_acct_v1')||state.acct;state.bannerOff=localStorage.getItem('cet6_banner_v1')||'';}catch(e){}}
 function payload(){return {marks:state.marks,daily:state.daily,sched:state.sched,acct:state.acct};}
+window.CET_PAYLOAD=payload;window.CET_LV=LV;
 function save(){try{localStorage.setItem(STORE,JSON.stringify(payload()));}catch(e){}try{if(window.cloudPush)window.cloudPush(LV,payload());}catch(e){}}
 var REV=[1,2,4,7,15];
 function addDays(n){var d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()+n);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
@@ -1331,6 +1341,10 @@ function mergeProg(local,cloud){
   sched:Object.assign({},cloud.sched||{},local.sched||{}),
   acct:local.acct||cloud.acct||''};
 }
+function progWeight(p){
+ p=p||{};
+ return Object.keys(p.marks||{}).length+Object.keys(p.daily||{}).length;
+}
 async function gateGh(){
   var token=document.getElementById('ghToken').value.trim();
   if(!token)throw new Error('先贴上令牌');
@@ -1340,12 +1354,19 @@ async function gateGh(){
   var hit=(list||[]).filter(function(g){return g.files&&g.files[FILE];})[0];
   var data={mode:gMode,cet6:{},cet4:{}};
   if(hit){var g=await gApi('/gists/'+hit.id,{token:token});try{data=JSON.parse(g.files[FILE].content)||data;}catch(e){}}
+  var l6={},l4={};
   try{
-   var l6=JSON.parse(localStorage.getItem('cet6_progress_v1')||'{}');
-   var l4=JSON.parse(localStorage.getItem('cet4_progress_v1')||'{}');
+   l6=JSON.parse(localStorage.getItem('cet6_progress_v1')||'{}');
+   l4=JSON.parse(localStorage.getItem('cet4_progress_v1')||'{}');
    data.cet6=mergeProg(l6,data.cet6||{});
    data.cet4=mergeProg(l4,data.cet4||{});
   }catch(e){}
+  var target=gMode;
+  var curLocal=(gMode==='cet4'?l4:l6);
+  var other=(gMode==='cet4'?'cet6':'cet4');
+  var otherCloud=data[other]||{};
+  if(progWeight(curLocal)===0&&progWeight(data[gMode]||{})===0&&progWeight(otherCloud)>0)target=other;
+  data.mode=target;
   localStorage.removeItem('guest_mode');
   localStorage.setItem('gh_token',token);
   localStorage.setItem('gh_user',me.login);
@@ -1353,10 +1374,10 @@ async function gateGh(){
   localStorage.removeItem('cet_token');
   localStorage.setItem('cet6_progress_v1',JSON.stringify(data.cet6||{}));
   localStorage.setItem('cet4_progress_v1',JSON.stringify(data.cet4||{}));
-  localStorage.setItem('cet_level',gMode);
+  localStorage.setItem('cet_level',target);
   if(hit)localStorage.setItem('gh_gist_id',hit.id);else localStorage.removeItem('gh_gist_id');
-  await ghSave(gMode,data[gMode]);
-  location.href='?level='+gMode;
+  await ghSave(target,data[target]);
+  location.href='?level='+target;
 }
 async function gateSv(reg){
   var payload={user:document.getElementById('gUser').value.trim(),password:document.getElementById('gPass').value,mode:gMode};
