@@ -23,22 +23,31 @@ gh api repos/interested3041/cet-sprint/pages/builds/latest
 
 ```bash
 curl -I https://interested3041.github.io/cet-sprint/
-# 200，且首页源码里能搜到「GitHub 直连」
+# 200，且首页源码里能搜到「GitHub 一键登录」
 ```
 
-## 二、GitHub 令牌（进度同步用）
+## 二、GitHub 一键登录（推荐）
+
+登录页的「GitHub 一键登录」需要先部署 `cloudflare/worker.js`，再创建一个 GitHub OAuth App。完整步骤见 [`cloudflare/README.md`](../cloudflare/README.md)，核心是：
+
+1. `cd cloudflare && npx wrangler login && npx wrangler deploy`
+2. GitHub → Settings → Developer settings → **OAuth Apps** → New OAuth App
+   - Homepage URL：`https://interested3041.github.io/cet-sprint/`
+   - Authorization callback URL：`https://cet-sprint-auth.cet-sprint.workers.dev/callback`
+3. 把 Client ID / Client Secret / STATE_SECRET 写进 Worker secret
+4. 确认 `index.html` 里的 `CLOUD_AUTH` 指向 Worker 地址
+
+朋友以后只点一次「GitHub 一键登录」，不用生成 PAT。
+
+### 备用：GitHub 令牌
+
+如果一键登录临时不可用，登录页还保留「改用 GitHub 令牌登录（备用）」：
 
 1. 头像 → Settings → Developer settings → **Personal access tokens → Fine-grained tokens**
-2. Token name 随便（如 `cet-sprint`），Expiration 设到考完
-3. Repository access：不需要任何仓库权限
-4. Permissions → Account permissions → 只勾 **Gists: Read and write**
-5. 生成后复制 `github_pat_…`，贴进网页的「GitHub 直连」
+2. Permissions → Account permissions → 只勾 **Gists: Read and write**
+3. 生成后复制 `github_pat_…`，贴进备用令牌框
 
-注意：
-
-- 令牌只存在浏览器 localStorage，不会上传
-- 不要多人共用一个令牌：同一账号只有一份 `cet-sprint.json`，会互相覆盖
-- 令牌泄露 = 别人能读写你的 Gist；发现泄露直接在该页面 Revoke
+令牌只存在浏览器 localStorage，不会上传；不要多人共用一个令牌。
 
 ## 三、自建服务器（可选）
 
@@ -69,9 +78,11 @@ server {
 | --- | --- |
 | Pages 404 | 检查分支是否 main、目录是否根、Actions 里 pages build 是否成功 |
 | 页面空白但 200 | 浏览器禁用 JS？或下载的 index.html 不完整，重新拉一次 |
+| 一键登录点完报 404 | GitHub OAuth App 的 Client ID 填错，核对 `GITHUB_CLIENT_ID` |
+| 一键登录回调 `state` 校验失败 | 清掉浏览器旧标签，重新从登录页发起；检查 `STATE_SECRET` 是否为空 |
 | 贴令牌 401 | 令牌复制不全/已过期，重新生成 |
 | 建不了 Gist（404/403） | 令牌没勾 Gists 权限 |
-| 两台设备进度不同 | 确认两边贴的是同一个 GitHub 账号的令牌 |
+| 两台设备进度不同 | 确认两边登录的是同一个 GitHub 账号，或两边都贴同一个令牌 |
 | 服务器登录 401 | 账号不存在或密码错；`server/data/db.json` 是否被清空 |
 
 ## 五、更新发布
