@@ -221,7 +221,7 @@ input,textarea,button{font-family:inherit}
   <div id="gPaneGh">
    <label class="g-label">GitHub 令牌（就是登录账号，只存这台设备）</label>
    <input class="g-input" id="ghToken" type="password" autocomplete="off" placeholder="ghp_… 或 github_pat_…">
-   <div class="g-foot">GitHub → Settings → Developer settings → Fine-grained tokens，只勾 <b>Gists</b> 读写。进度存在你自己的私密 Gist，换设备贴同一个令牌就读回。<br>没部署服务器就只用这一栏，朋友也各自生成自己的令牌。</div>
+   <div class="g-foot">第一次用：<a href="https://github.com/settings/tokens/new?scopes=gist&description=cet-sprint" target="_blank" rel="noopener" style="color:#2f55d4;font-weight:700">点这里生成令牌</a>（已预选 gist 权限）→ Generate → 复制粘贴。也可以自己建 Fine-grained token，只勾 <b>Gists</b> 读写。<br>令牌只存这台设备，下次打开直接进；换设备贴同一个令牌就读回。朋友各自生成自己的。</div>
   </div>
   <div id="gPaneSv" class="g-hidden">
    <label class="g-label">账号</label>
@@ -1195,4 +1195,5 @@ async function gateReg(){gateMsg('');gateBusy(true);try{await gateSv(true);}catc
 </script>
 </body>
 </html>
+
 
