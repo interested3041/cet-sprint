@@ -1324,13 +1324,13 @@ renderDays();renderTabs();renderTip();renderCards();renderTask();updateProg();re
 <button class="fab" id="fabTop" onclick="toTop()" title="回到顶部">↑</button>
 
 <script>
-var gMode=(function(){var l=localStorage.getItem('cet_level');return l==='cet4'?'cet4':'cet6';})(), gWhich='gh';
+var gMode=(function(){var q=(location.search.match(/[?&]level=(cet4|cet6)/)||[])[1],l=q||localStorage.getItem('cet_level');return l==='cet4'?'cet4':'cet6';})(), gWhich='gh';
 var CLOUD_AUTH='https://cet-sprint-auth.cet-sprint.workers.dev'; // Cloudflare OAuth Worker
 window.gateGuest=function(){localStorage.setItem('guest_mode','1');localStorage.setItem('cet_level',gMode);location.href='?level='+gMode;};
 window.gateTokenPane=function(){var pane=document.getElementById('gPaneGh'),go=document.getElementById('gGo');var show=pane.classList.contains('g-hidden');pane.classList.toggle('g-hidden',!show);go.classList.toggle('g-hidden',!show);if(show)setTimeout(function(){document.getElementById('ghToken').focus();},50);};
 window.gateCloud=function(){if(!CLOUD_AUTH){gateMsg('一键登录还没配置好，先点「游客进入」或用令牌登录。');return;}localStorage.setItem('cet_level',gMode);location.href=CLOUD_AUTH.replace(/\/$/,'')+'/auth?level='+gMode;};
 window.gateGuest=function(){localStorage.setItem('guest_mode','1');localStorage.setItem('cet_level',gMode);location.href='?level='+gMode;};
-window.showGate=function(){gMode=(localStorage.getItem('cet_level')==='cet4'?'cet4':'cet6');document.querySelectorAll('.g-lv').forEach(function(x){x.classList.toggle('on',x.dataset.lv===gMode);});var g=document.getElementById('gate');if(g)g.classList.add('open');gateMsg('');gateBusy(false);};
+window.showGate=function(){var q=(location.search.match(/[?&]level=(cet4|cet6)/)||[])[1];gMode=q||(localStorage.getItem('cet_level')==='cet4'?'cet4':'cet6');document.querySelectorAll('.g-lv').forEach(function(x){x.classList.toggle('on',x.dataset.lv===gMode);});var g=document.getElementById('gate');if(g)g.classList.add('open');gateMsg('');gateBusy(false);};
 function gateTab(t){gWhich=t;document.querySelectorAll('.g-tabs2 div').forEach(function(x){x.classList.toggle('on',x.dataset.tab===t);});
  document.getElementById('gPaneGh').classList.toggle('g-hidden',t!=='gh');
  document.getElementById('gPaneSv').classList.toggle('g-hidden',t!=='sv');
