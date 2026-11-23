@@ -323,7 +323,11 @@ function ghReq(path, method, body){
 var GFILE='cet-sprint.json', GDESC='CET 冲刺进度（勿删）';
 function pickGist(list){
   var hits=(list||[]).filter(function(g){return g.files&&g.files[GFILE];});
-  hits.sort(function(a,b){return String(b.updated_at||'').localeCompare(String(a.updated_at||''));});
+  hits.sort(function(a,b){
+    var sa=(a.files[GFILE].size||0),sb=(b.files[GFILE].size||0);
+    if(sb!==sa)return sb-sa;
+    return String(b.updated_at||'').localeCompare(String(a.updated_at||''));
+  });
   return hits[0]||null;
 }
 function syncOk(){
