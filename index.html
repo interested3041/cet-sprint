@@ -1376,7 +1376,8 @@ async function gateGh(){
   localStorage.setItem('cet4_progress_v1',JSON.stringify(data.cet4||{}));
   localStorage.setItem('cet_level',target);
   if(hit)localStorage.setItem('gh_gist_id',hit.id);else localStorage.removeItem('gh_gist_id');
-  await ghSave(target,data[target]);
+  var saved=await ghSave(target,data[target]);
+  if(!saved&&!hit)throw new Error('云端进度创建失败：'+(localStorage.getItem('sync_error')||'检查 GitHub 授权里的 gist 权限'));
   location.href='?level='+target;
 }
 async function gateSv(reg){
