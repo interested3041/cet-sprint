@@ -199,6 +199,8 @@ input,textarea,button{font-family:inherit}
 .g-tabs2 div{flex:1;text-align:center;padding:8px;border-radius:9px;font-size:13px;font-weight:700;color:#6b7280;cursor:pointer}
 .g-tabs2 div.on{background:#fff;color:#2f55d4;box-shadow:0 2px 8px rgba(47,85,212,.12)}
 .g-label{display:block;font-size:12.5px;color:#6b7280;margin:10px 0 6px}
+.g-or{display:flex;align-items:center;gap:8px;margin:12px 0 6px;color:#9ca3af;font-size:12px;font-weight:600}
+.g-or i{height:1px;flex:1;background:#e5e9f4;font-style:normal}
 .g-input{width:100%;padding:12px;border:1px solid #e5e9f4;border-radius:12px;font-size:16px;background:#fbfcff;outline:none;box-sizing:border-box}
 .g-levels{display:flex;gap:10px;margin-top:6px}
 .g-lv{flex:1;text-align:center;border:1px solid #e5e9f4;border-radius:14px;padding:11px 6px;cursor:pointer;background:#fbfcff;font-weight:700;font-size:14px;color:#1b2033}
@@ -216,10 +218,17 @@ input,textarea,button{font-family:inherit}
 <div id="gate">
  <div class="g-card">
   <div class="g-brand">四六级冲刺背诵</div>
-  <div class="g-slogan">一个账号，两台设备，进度自动跟着走</div>
+  <div class="g-slogan">不登录也能背；登录后换设备自动同步</div>
   <div class="g-tabs2"><div class="on" data-tab="gh" onclick="gateTab('gh')">GitHub 直连</div><div data-tab="sv" id="gTabSv" onclick="gateTab('sv')">自建服务器</div></div>
+  <label class="g-label">先背哪一级</label>
+  <div class="g-levels">
+   <div class="g-lv on" data-lv="cet4" onclick="gatePick(this)">四级<small>20 天 · 2000 词 + 小测</small></div>
+   <div class="g-lv" data-lv="cet6" onclick="gatePick(this)">六级<small>20 天 · 1200 词 + 小测</small></div>
+  </div>
+  <button class="g-btn" onclick="gateGuest()">游客进入 · 不用账号，直接背</button>
+  <div class="g-or"><i></i>或，用 GitHub 账号自动同步<i></i></div>
   <div id="gPaneGh">
-   <label class="g-label">GitHub 令牌（就是登录账号，只存这台设备）</label>
+   <label class="g-label">GitHub 令牌（登录后自动云同步，只存这台设备）</label>
    <input class="g-input" id="ghToken" type="password" autocomplete="off" placeholder="ghp_… 或 github_pat_…">
    <div class="g-foot">第一次用：<a href="https://github.com/settings/tokens/new?scopes=gist&description=cet-sprint" target="_blank" rel="noopener" style="color:#2f55d4;font-weight:700">点这里生成令牌</a>（已预选 gist 权限）→ Generate → 复制粘贴。也可以自己建 Fine-grained token，只勾 <b>Gists</b> 读写。<br>令牌只存这台设备，下次打开直接进；换设备贴同一个令牌就读回。朋友各自生成自己的。</div>
   </div>
@@ -229,16 +238,10 @@ input,textarea,button{font-family:inherit}
    <label class="g-label">密码</label>
    <input class="g-input" id="gPass" type="password" placeholder="至少 4 位">
   </div>
-  <label class="g-label">先背哪一级</label>
-  <div class="g-levels">
-   <div class="g-lv on" data-lv="cet4" onclick="gatePick(this)">四级<small>20 天 · 2000 词</small></div>
-   <div class="g-lv" data-lv="cet6" onclick="gatePick(this)">六级<small>20 天 · 1200 词 + 小测</small></div>
-  </div>
-  <button class="g-btn" id="gGo" onclick="gateGo()">登录并开始背诵</button>
-  <button class="g-ghost" onclick="gateGuest()">游客进入（免账号，数据存本机）</button>
+  <button class="g-ghost" id="gGo" onclick="gateGo()" style="margin-top:10px">登录并开始背诵（自动同步）</button>
   <button class="g-ghost g-hidden" id="gReg" onclick="gateReg()">没有服务器账号？注册一个</button>
   <div class="g-msg" id="gMsg"></div>
-  <div class="g-foot">只想在这台设备背，直接点游客；换设备想自动同步再登录。朋友各用各的令牌，数据互不干扰。</div>
+  <div class="g-foot">游客数据存本机；换设备点「☁ 同步」导出 JSON 或生成链接即可。登录用户自动云同步。</div>
  </div>
 </div>
 
