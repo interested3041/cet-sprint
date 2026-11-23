@@ -321,6 +321,11 @@ function ghReq(path, method, body){
   return fetch('https://api.github.com'+path,o).then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error(j.message||('HTTP '+r.status));return j;});});
 }
 var GFILE='cet-sprint.json', GDESC='CET 冲刺进度（勿删）';
+function pickGist(list){
+  var hits=(list||[]).filter(function(g){return g.files&&g.files[GFILE];});
+  hits.sort(function(a,b){return String(b.updated_at||'').localeCompare(String(a.updated_at||''));});
+  return hits[0]||null;
+}
 function syncOk(){
   try{localStorage.setItem('sync_last',new Date().toISOString());localStorage.removeItem('sync_error');}catch(e){}
 }
@@ -338,7 +343,7 @@ function gistSaveBody(body,gid,retried){
     });
   }
   return ghReq('/gists?per_page=100','GET').then(function(list){
-    var hit=(list||[]).filter(function(g){return g.files&&g.files[GFILE];})[0];
+    var hit=pickGist(list);
     if(hit){localStorage.setItem('gh_gist_id',hit.id);return ghReq('/gists/'+hit.id,'PATCH',{files:body.files});}
     return ghReq('/gists','POST',body).then(function(g){if(g&&g.id)localStorage.setItem('gh_gist_id',g.id);});
   });
@@ -404,7 +409,7 @@ window.pullCloud=async function(){
  if(!confirm('用云端进度覆盖本机的四级/六级记录？本机未上传的内容会丢失。'))return;
  try{
   var list=await gApi('/gists?per_page=100',{token:tk});
-  var hit=(list||[]).filter(function(g){return g.files&&g.files[GFILE];})[0];
+  var hit=pickGist(list);
   if(!hit){alert('云端没有找到 cet-sprint.json，先在本机背几个词并等右上角显示已同步。');return;}
   var g=await gApi('/gists/'+hit.id,{token:tk});
   var d=JSON.parse(g.files[GFILE].content)||{};
@@ -429,7 +434,7 @@ window.switchLevel=function(lv){
  localStorage.setItem('cet_level',lv);
  if(localStorage.getItem('gh_token')){
   ghReq('/gists?per_page=100','GET').then(function(list){
-   var hit=(list||[]).filter(function(g){return g.files&&g.files[GFILE];})[0];
+   var hit=pickGist(list);
    if(!hit){location.href='?level='+lv;return;}
    localStorage.setItem('gh_gist_id',hit.id);
    return ghReq('/gists/'+hit.id,'GET').then(function(g){
@@ -1351,7 +1356,7 @@ async function gateGh(){
   var me=await gApi('/user',{token:token});
   var list=await gApi('/gists?per_page=100',{token:token});
   var FILE='cet-sprint.json';
-  var hit=(list||[]).filter(function(g){return g.files&&g.files[FILE];})[0];
+  var hit=pickGist(list);
   var data={mode:gMode,cet6:{},cet4:{}};
   if(hit){var g=await gApi('/gists/'+hit.id,{token:token});try{data=JSON.parse(g.files[FILE].content)||data;}catch(e){}}
   var l6={},l4={};
