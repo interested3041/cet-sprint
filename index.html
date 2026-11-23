@@ -234,7 +234,7 @@ input,textarea,button{font-family:inherit}
    <div class="g-lv on" data-lv="cet4" onclick="gatePick(this)">四级<small>20 天 · 2000 词</small></div>
    <div class="g-lv" data-lv="cet6" onclick="gatePick(this)">六级<small>20 天 · 1200 词 + 小测</small></div>
   </div>
-  <button class="g-btn" id="gGo" onclick="gateGo()">连接并进入</button>
+  <button class="g-btn" id="gGo" onclick="gateGo()">登录并开始背诵</button>
   <button class="g-ghost g-hidden" id="gReg" onclick="gateReg()">没有服务器账号？注册一个</button>
   <div class="g-msg" id="gMsg"></div>
   <div class="g-foot">给 2-3 个朋友用：每人用自己的 GitHub 令牌，数据互不干扰。</div>
@@ -1187,7 +1187,7 @@ async function gateSv(reg){
 async function gateGo(){gateMsg('');gateBusy(true);try{ if(gWhich==='gh')await gateGh();else await gateSv(false);}catch(e){gateMsg(e.message);gateBusy(false);}}
 async function gateReg(){gateMsg('');gateBusy(true);try{await gateSv(true);}catch(e){gateMsg(e.message);gateBusy(false);}}
 (function(){
- if(location.hostname.indexOf('github.io')>=0){var st=document.getElementById('gTabSv');if(st)st.style.display='none';}
+ if(location.hostname.indexOf('github.io')>=0){var tb=document.querySelector('.g-tabs2');if(tb)tb.style.display='none';gWhich='gh';}
  var gh=localStorage.getItem('gh_token'),sv=localStorage.getItem('cet_token');
  if(!gh&&!sv){document.getElementById('gate').classList.add('open');return;}
  if(location.search.indexOf('level=')<0){location.href='?level='+(localStorage.getItem('cet_level')||'cet6');}
@@ -1195,5 +1195,6 @@ async function gateReg(){gateMsg('');gateBusy(true);try{await gateSv(true);}catc
 </script>
 </body>
 </html>
+
 
 
