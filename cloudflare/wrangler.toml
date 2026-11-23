@@ -1,0 +1,7 @@
+name = "cet-sprint-auth"
+main = "worker.js"
+compatibility_date = "2026-11-01"
+workers_dev = true
+
+[vars]
+SITE_URL = "https://interested3041.github.io/cet-sprint/"

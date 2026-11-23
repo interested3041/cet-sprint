@@ -227,10 +227,13 @@ input,textarea,button{font-family:inherit}
   </div>
   <button class="g-btn" onclick="gateGuest()">游客进入 · 不用账号，直接背</button>
   <div class="g-or"><i></i>或，用 GitHub 账号自动同步<i></i></div>
-  <div id="gPaneGh">
-   <label class="g-label">GitHub 令牌（登录后自动云同步，只存这台设备）</label>
+  <button class="g-btn" id="gCloud" onclick="gateCloud()" style="margin-top:0">GitHub 一键登录（推荐，自动同步）</button>
+  <div class="g-foot" style="margin-top:8px">朋友以后只用点这个按钮，不用生成令牌。首次使用需要站长在 GitHub 创建一次 OAuth App。</div>
+  <button class="g-ghost" onclick="gateTokenPane()">改用 GitHub 令牌登录（备用）</button>
+  <div id="gPaneGh" class="g-hidden">
+   <label class="g-label">GitHub 令牌（备用方式）</label>
    <input class="g-input" id="ghToken" type="password" autocomplete="off" placeholder="ghp_… 或 github_pat_…">
-   <div class="g-foot">第一次用：<a href="https://github.com/settings/tokens/new?scopes=gist&description=cet-sprint" target="_blank" rel="noopener" style="color:#2f55d4;font-weight:700">点这里生成令牌</a>（已预选 gist 权限）→ Generate → 复制粘贴。也可以自己建 Fine-grained token，只勾 <b>Gists</b> 读写。<br>令牌只存这台设备，下次打开直接进；换设备贴同一个令牌就读回。朋友各自生成自己的。</div>
+   <div class="g-foot">只在必要时用：<a href="https://github.com/settings/tokens/new?scopes=gist&description=cet-sprint" target="_blank" rel="noopener" style="color:#2f55d4;font-weight:700">生成令牌</a>（已预选 gist 权限）。令牌只存这台设备；一键登录失败时再走这里。</div>
   </div>
   <div id="gPaneSv" class="g-hidden">
    <label class="g-label">账号</label>
@@ -238,7 +241,7 @@ input,textarea,button{font-family:inherit}
    <label class="g-label">密码</label>
    <input class="g-input" id="gPass" type="password" placeholder="至少 4 位">
   </div>
-  <button class="g-ghost" id="gGo" onclick="gateGo()" style="margin-top:10px">登录并开始背诵（自动同步）</button>
+  <button class="g-ghost g-hidden" id="gGo" onclick="gateGo()" style="margin-top:10px">令牌登录并开始背诵（自动同步）</button>
   <button class="g-ghost g-hidden" id="gReg" onclick="gateReg()">没有服务器账号？注册一个</button>
   <div class="g-msg" id="gMsg"></div>
   <div class="g-foot">游客数据存本机；换设备点「☁ 同步」导出 JSON 或生成链接即可。登录用户自动云同步。</div>
@@ -1256,6 +1259,10 @@ renderDays();renderTabs();renderTip();renderCards();renderTask();updateProg();re
 
 <script>
 var gMode=(function(){var l=localStorage.getItem('cet_level');return l==='cet6'?'cet6':'cet4';})(), gWhich='gh';
+var CLOUD_AUTH='https://cet-sprint-auth.cet-sprint.workers.dev'; // Cloudflare OAuth Worker
+window.gateGuest=function(){localStorage.setItem('guest_mode','1');localStorage.setItem('cet_level',gMode);location.href='?level='+gMode;};
+window.gateTokenPane=function(){var pane=document.getElementById('gPaneGh'),go=document.getElementById('gGo');var show=pane.classList.contains('g-hidden');pane.classList.toggle('g-hidden',!show);go.classList.toggle('g-hidden',!show);if(show)setTimeout(function(){document.getElementById('ghToken').focus();},50);};
+window.gateCloud=function(){if(!CLOUD_AUTH){gateMsg('一键登录还没配置好，先点「游客进入」或用令牌登录。');return;}localStorage.setItem('cet_level',gMode);location.href=CLOUD_AUTH.replace(/\/$/,'')+'/auth?level='+gMode;};
 window.gateGuest=function(){localStorage.setItem('guest_mode','1');localStorage.setItem('cet_level',gMode);location.href='?level='+gMode;};
 window.showGate=function(){gMode=(localStorage.getItem('cet_level')==='cet4'?'cet4':'cet6');document.querySelectorAll('.g-lv').forEach(function(x){x.classList.toggle('on',x.dataset.lv===gMode);});var g=document.getElementById('gate');if(g)g.classList.add('open');gateMsg('');gateBusy(false);};
 function gateTab(t){gWhich=t;document.querySelectorAll('.g-tabs2 div').forEach(function(x){x.classList.toggle('on',x.dataset.tab===t);});
@@ -1322,6 +1329,29 @@ async function gateSv(reg){
 }
 async function gateGo(){gateMsg('');gateBusy(true);try{ if(gWhich==='gh')await gateGh();else await gateSv(false);}catch(e){gateMsg(e.message);gateBusy(false);}}
 async function gateReg(){gateMsg('');gateBusy(true);try{await gateSv(true);}catch(e){gateMsg(e.message);gateBusy(false);}}
+(async function(){
+ var raw=location.hash.replace(/^#/,'');
+ if(raw.indexOf('gh_token=')<0)return;
+ var p=new URLSearchParams(raw),tk=p.get('gh_token');
+ if(!tk)return;
+ var lv=(p.get('level')==='cet4'?'cet4':'cet6');
+ localStorage.setItem('gh_token',tk);
+ localStorage.setItem('cet_level',lv);
+ var u=p.get('gh_user');if(u){localStorage.setItem('gh_user',u);localStorage.setItem('cet_user',u);}
+ var av=p.get('gh_avatar');if(av)localStorage.setItem('gh_avatar',av);
+ localStorage.removeItem('guest_mode');
+ location.replace(location.pathname+'?level='+lv+'&oauth=1');
+})();
+(async function(){
+ if(!/[?&]oauth=1/.test(location.search))return;
+ var tk=localStorage.getItem('gh_token');if(!tk)return;
+ var lv=(location.search.match(/[?&]level=(cet4|cet6)/)||[])[1]||localStorage.getItem('cet_level')||'cet6';
+ gMode=lv;
+ document.getElementById('gate').classList.add('open');
+ gateMsg('正在从云端同步进度…');gateBusy(true);
+ document.getElementById('ghToken').value=tk;
+ try{await gateGh();}catch(e){gateMsg('云端同步失败：'+e.message+'。可以点「游客进入」先用本机数据，或检查网络后重试。');gateBusy(false);}
+})();
 (function(){
  if(location.hostname.indexOf('github.io')>=0){var tb=document.querySelector('.g-tabs2');if(tb)tb.style.display='none';gWhich='gh';}
  var gh=localStorage.getItem('gh_token'),sv=localStorage.getItem('cet_token'),guest=localStorage.getItem('guest_mode')==='1';

@@ -6,9 +6,9 @@
 
 ## 页面结构
 
-- 最外层 `#gate` 是登录门（GitHub 直连 / 自建服务器两个标签）
-- `#gate` 之下就是原来的背词应用，`LV` 决定加载四级还是六级数据
-- 四级 `window.CET4_DATA`、六级 `window.CET6_DATA`、小测 `window.CET6_DAILY` 三段 JSON 内联在页面里
+- 最外层 `#gate` 是登录门：游客进入 / GitHub 一键登录 / 令牌备用 / 自建服务器（仅非 GitHub Pages 显示）
+- `#gate` 之下就是背词应用，`LV` 决定加载四级还是六级数据
+- 四级 `window.CET4_DATA`、六级 `window.CET6_DATA`、六级小测 `window.CET6_DAILY` 内联在页面里；四级小测在运行时由当天词表生成，翻译题库是 `window.CET4_TRANS`
 
 ## 进度存储
 
@@ -17,9 +17,23 @@
 | key | 内容 |
 | --- | --- |
 | `cet6_progress_v1` / `cet4_progress_v1` | marks（1 认识 / 0 不认识）、sched（复习排期）、daily（小测作答）、acct |
-| `gh_token` / `gh_user` / `gh_gist_id` | GitHub 直连凭据与 Gist 缓存 |
+| `gh_token` / `gh_user` / `gh_avatar` / `gh_gist_id` | GitHub 登录凭据与 Gist 缓存 |
 | `cet_token` / `cet_user` | 自建服务器会话 |
 | `cet_level` | 上次选的级别 |
+| `guest_mode` | 游客模式标记；登录时清除 |
+
+## GitHub OAuth 一键登录
+
+静态页不能安全保存 `client_secret`，所以加了一个极薄的 Cloudflare Worker（`cloudflare/worker.js`）：
+
+1. 站点跳转 `GET https://cet-sprint-auth.cet-sprint.workers.dev/auth?level=cet4|cet6`
+2. Worker 生成带 HMAC 签名 + 10 分钟过期的 `state`，302 到 GitHub `authorize`，scope 为 `read:user gist`
+3. GitHub 回调 Worker `/callback?code&state`；Worker 校验 state，用 `client_id + client_secret + code` 换 access token
+4. Worker 读 `GET /user` 拿 login/avatar，再 302 回站点，把 token 放在 URL fragment（`#gh_token=...`）
+5. 站点读取 fragment 后立刻 `location.replace` 清掉 hash，并进入 `?oauth=1`；`gateGh()` 拉取/合并 Gist 后正式进入
+6. 网页端只拿到短期 token，不接触 client_secret；Worker 不保存 token
+
+这样朋友只点一次 GitHub 授权，不用理解 PAT；令牌登录仍保留为备用。部署与 OAuth App 创建见 `cloudflare/README.md`。
 
 ## GitHub Gist 同步
 
@@ -44,6 +58,7 @@
 
 ## 已知边界
 
-- 单文件方案里四级只有「阅读式」卡片（词形/音标/释义/发音），没有例句与小测；六级是全套
-- Gist 方案没有版本合并，离线改动不会自动补传
+- 四级是「20 天 × 100 词 + 8 道词汇 MCQ + 1 段中译英」，不含听力/阅读/写作；六级才是四部分
+- Gist 方案没有版本合并，离线改动不会自动补传；多设备同时写以最后写入为准
+- 游客同步链接/导出一次只覆盖当前级别，不会把四六级一起打包
 - 页面依赖第三方 TTS（有道/百度/Google），离线时退化为浏览器 `speechSynthesis`
