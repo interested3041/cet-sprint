@@ -464,7 +464,7 @@ window.CET6_DAILY = [{"day":1,"scope":"摸底 · 校园学习高频词（D1 当�
 <script>
 (function(){
 "use strict";
-var LV = (location.search.indexOf('level=cet4')>=0 || localStorage.getItem('cet_level')==='cet4')?'cet4':'cet6';
+var LV = (function(){var q=(location.search.match(/[?&]level=(cet4|cet6)/)||[])[1];if(q)return q;return localStorage.getItem('cet_level')==='cet4'?'cet4':'cet6';})();
 var D = (LV==='cet4' && window.CET4_DATA) ? window.CET4_DATA : window.CET6_DATA;
 if(!D){document.getElementById('cards').innerHTML='<div class="empty">数据未加载，请运行 build.ps1 生成。</div>';return;}
 var META=D.meta, DAYS=D.days;
