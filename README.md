@@ -65,10 +65,22 @@ server/              # 可选的自建账号服务器（零依赖）
 docs/
   DEPLOY.md          # 部署与令牌配置、排错
   ARCHITECTURE.md    # 技术实现与数据结构
+  GIT.md             # 仓库目录、提交流程与密钥边界
   preview.png        # 登录页截图
 CHANGELOG.md
 LICENSE
 ```
+
+## 仓库说明（给维护者）
+
+仓库地址是 https://github.com/interested3041/cet-sprint，主分支 `main`。可以把它理解成“一个网页 + 两个可选后端”：
+
+- `index.html` 是整站，GitHub Pages 直接发布它
+- `cloudflare/` 是 GitHub 一键登录的 OAuth Worker，单独 `wrangler deploy`，不会被 Pages 发布
+- `server/` 是可选的自建账号服务器，只有你自己部署时才用
+- 密钥只放 Cloudflare 环境变量，绝不进仓库
+
+更完整的目录职责、提交前缀、日常改动流程和“不要提交什么”，见 [`docs/GIT.md`](docs/GIT.md)。
 
 ## 本地开发
 
