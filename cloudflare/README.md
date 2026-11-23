@@ -2,6 +2,9 @@
 
 这个 Worker 只做 GitHub OAuth 中转：把授权码换成 token，再把 token 用 URL fragment 交回静态站点。它不保存学习数据，学习数据仍然在每个人的 GitHub Gist 里。
 
+当前部署地址：`https://cet-sprint-auth.cet-sprint.workers.dev`  
+GitHub OAuth App 回调地址：`https://cet-sprint-auth.cet-sprint.workers.dev/callback`
+
 ## 为什么需要它
 
 静态页（GitHub Pages）不能安全保存 GitHub OAuth 的 `client_secret`，也不能直接跨域换 token。Worker 是免费的，正好补上这一步；朋友以后只点「GitHub 一键登录」，不需要自己生成 PAT。
