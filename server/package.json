@@ -1,0 +1,9 @@
+{
+  "name": "cet-sprint-server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "四六级冲刺背诵 · 可选的自建账号服务器",
+  "main": "server.js",
+  "scripts": { "start": "node server.js" },
+  "engines": { "node": ">=16" }
+}
