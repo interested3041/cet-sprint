@@ -1251,6 +1251,8 @@ function tryApply(str,ask){
 function authErrText(msg){return /bad credentials|401|unauthorized/i.test(String(msg||''));}
 function clearAuthState(){
  ['gh_token','gh_gist_id','cet_token','cet_user','gh_user','gh_avatar','gh_scope'].forEach(function(k){localStorage.removeItem(k);});
+ localStorage.removeItem('cet_entered');
+ localStorage.removeItem('sync_last');
  localStorage.setItem('sync_error','登录已失效，请重新登录');
 }
 window.relogin=function(){clearAuthState();closeSync();showGate();gateMsg('登录已失效，请重新登录');};
@@ -1413,7 +1415,18 @@ renderDays();renderTabs();renderTip();renderCards();renderTask();updateProg();re
 var gMode=(function(){var q=(location.search.match(/[?&]level=(cet4|cet6)/)||[])[1];return q||'';})(), gWhich='gh';
 var CLOUD_AUTH='https://cet-sprint-auth.cet-sprint.workers.dev'; // Cloudflare OAuth Worker
 window.gateGuest=function(){if(!gMode){gateMsg('先选四级或六级');return;}localStorage.removeItem('gh_switch');localStorage.setItem('guest_mode','1');localStorage.setItem('cet_entered','1');localStorage.setItem('cet_level',gMode);location.href='?level='+gMode;};
-window.gateCloud=function(){if(!gMode){gateMsg('先选四级或六级');return;}if(!CLOUD_AUTH){gateMsg('一键登录还没配置好');return;}localStorage.setItem('cet_level',gMode);location.href=CLOUD_AUTH.replace(/\/$/,'')+'/auth?level='+gMode;};
+window.gateCloud=function(){
+ if(!gMode){gateMsg('先选四级或六级');return;}
+ if(!CLOUD_AUTH){gateMsg('一键登录还没配置好');return;}
+ var forcePick=localStorage.getItem('gh_switch')==='1'||/bad credentials|401|unauthorized/i.test(localStorage.getItem('sync_error')||'');
+ localStorage.setItem('cet_level',gMode);
+ ['gh_token','gh_gist_id','cet_token','cet_user','gh_user','gh_avatar','gh_scope'].forEach(function(k){localStorage.removeItem(k);});
+ localStorage.removeItem('guest_mode');
+ localStorage.removeItem('cet_entered');
+ localStorage.removeItem('sync_error');
+ localStorage.removeItem('sync_last');
+ location.href=CLOUD_AUTH.replace(/\/$/,'')+'/auth?level='+gMode+(forcePick?'&switch=1':'');
+};
 window.showGate=function(){var q=(location.search.match(/[?&]level=(cet4|cet6)/)||[])[1];gMode=q||localStorage.getItem('cet_level')||'';if(gMode!=='cet4'&&gMode!=='cet6')gMode='';gateLevelUI();var g=document.getElementById('gate');if(g)g.classList.add('open');gateMsg('');gateBusy(false);};
 function gatePick(el){document.querySelectorAll('.g-lv').forEach(function(x){x.classList.remove('on');});el.classList.add('on');gMode=el.dataset.lv;gateReady();gateMsg('');}
 function gateLevelUI(){document.querySelectorAll('.g-lv').forEach(function(x){x.classList.toggle('on',x.dataset.lv===gMode);});gateReady();}
@@ -1496,7 +1509,18 @@ async function gateGh(){
  document.getElementById('gate').classList.add('open');
  gateMsg('正在从云端同步进度…');gateBusy(true);
  document.getElementById('ghToken').value=tk;
- try{await gateGh();}catch(e){gateMsg('云端同步失败：'+e.message+'。可以点「游客进入」先用本机数据，或检查网络后重试。');gateBusy(false);}
+ try{await gateGh();}catch(e){
+   var em=String((e&&e.message)||e||'');
+   if(/bad credentials|401|unauthorized/i.test(em)){
+     ['gh_token','gh_gist_id','cet_token','cet_user','gh_user','gh_avatar','gh_scope'].forEach(function(k){localStorage.removeItem(k);});
+     localStorage.setItem('sync_error','登录已失效，请重新登录');
+     localStorage.removeItem('cet_entered');
+     gateMsg('GitHub 授权失败（Bad credentials）。请重新点「GitHub 一键登录」；如果仍失败，先退出 GitHub 当前账号再登录。');
+   }else{
+     gateMsg('云端同步失败：'+em+'。可以点「游客进入」先用本机数据，或检查网络后重试。');
+   }
+   gateBusy(false);
+ }
 })();
 (function(){
  gateLevelUI();
