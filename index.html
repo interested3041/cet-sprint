@@ -114,7 +114,7 @@ header{position:static;background:transparent;border-bottom:1px solid var(--line
 .sync-error{color:#b45309}
 .account-line{font-size:13px;color:var(--sub);margin:2px 0 10px}
 .account-line b{color:var(--ink)}
-.link-input{width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:10px;padding:12px;font-size:14px;font-family:inherit;background:var(--card);color:var(--ink);margin-top:10px}
+.link-input{width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:10px;padding:11px 12px;font-size:16px;line-height:1.5;font-family:inherit;background:var(--card);color:var(--ink);margin-top:10px;resize:none;min-height:58px;user-select:text;-webkit-user-select:text}
 .link-input:focus{outline:2px solid var(--brand);outline-offset:1px;border-color:transparent}
 #linkModal .box{max-width:520px}
 #linkModal{z-index:60}
@@ -317,10 +317,9 @@ input,textarea,button{font-family:inherit}
   <div class="box">
     <button class="close" onclick="closeLinkImport()">✕</button>
     <div class="section">
-      <h2>用链接导入</h2>
-      <p class="sync-desc">粘贴同步链接或同步码；导入会覆盖本机当前记录。</p>
-      <input id="linkInput" class="link-input" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="https://…/#sync=…" onkeydown="if(event.key==='Enter')applyLinkInput()">
-      <div class="sync-actions"><button class="btn" onclick="applyLinkInput()">导入</button><button class="btn ghost" onclick="closeLinkImport()">取消</button></div>
+      <h2>导入进度</h2>
+      <textarea id="linkInput" class="link-input" rows="2" autocomplete="off" autocapitalize="off" spellcheck="false" inputmode="url" placeholder="粘贴同步链接或同步码"></textarea>
+      <div class="sync-actions"><button class="btn ghost" onclick="pasteLinkInput()">粘贴</button><button class="btn" onclick="applyLinkInput()">导入</button><button class="btn ghost" onclick="closeLinkImport()">取消</button></div>
     </div>
   </div>
 </div>
@@ -1343,8 +1342,30 @@ window.openLinkImport=function(){
   if(el)el.value='';
   document.getElementById('linkModal').classList.add('open');
   if(el){try{el.focus();}catch(e){}}
+  readLinkClipboard(true);
 };
 window.closeLinkImport=function(){document.getElementById('linkModal').classList.remove('open');};
+window.pasteLinkInput=function(){readLinkClipboard(false);};
+function readLinkClipboard(auto){
+  var el=document.getElementById('linkInput');
+  if(!el)return;
+  if(!navigator.clipboard||!navigator.clipboard.readText){
+    if(!auto)showSyncToast('请长按输入框粘贴');
+    return;
+  }
+  navigator.clipboard.readText().then(function(t){
+    t=String(t||'').trim();
+    if(!t){if(!auto)showSyncToast('剪贴板是空的');return;}
+    if(auto){
+      if(!document.getElementById('linkModal').classList.contains('open'))return;
+      if(t.indexOf('sync=')<0&&!/^[A-Za-z0-9_-]{20,}$/.test(t))return;
+    }
+    el.value=t;
+    if(!auto)showSyncToast('已粘贴剪贴板内容');
+  }).catch(function(){
+    if(!auto)showSyncToast('浏览器没给剪贴板权限，请长按输入框粘贴');
+  });
+}
 window.applyLinkInput=function(){
   var el=document.getElementById('linkInput'),str=el?String(el.value||'').trim():'';
   if(!str){showSyncToast('先粘贴链接或同步码');return;}
