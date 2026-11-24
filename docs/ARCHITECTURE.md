@@ -6,7 +6,7 @@
 
 ## 页面结构
 
-- 最外层 `#gate` 是登录门：游客进入 / GitHub 一键登录 / 令牌备用 / 自建服务器（仅非 GitHub Pages 显示）
+- 最外层 `#gate` 是登录门：先选级别，再选游客进入或 GitHub 一键登录；不预选级别
 - `#gate` 之下就是背词应用，`LV` 决定加载四级还是六级数据
 - 四级 `window.CET4_DATA`、六级 `window.CET6_DATA`、六级小测 `window.CET6_DAILY` 内联在页面里；四级小测在运行时由当天词表生成，翻译题库是 `window.CET4_TRANS`
 
@@ -16,10 +16,11 @@
 
 | key | 内容 |
 | --- | --- |
-| `cet6_progress_v1` / `cet4_progress_v1` | marks（1 认识 / 0 不认识）、sched（复习排期）、daily（小测作答）、acct |
+| `cet6_progress_v1` / `cet4_progress_v1` | marks（1 认识 / 0 不认识）、sched（复习排期）、daily（小测作答） |
 | `gh_token` / `gh_user` / `gh_avatar` / `gh_gist_id` | GitHub 登录凭据与 Gist 缓存 |
 | `cet_token` / `cet_user` | 自建服务器会话 |
 | `cet_level` | 上次选的级别 |
+| `cet_entered` | 本机已进入过；根链接再次打开直接进内容，退出登录时清除 |
 | `guest_mode` | 游客模式标记；登录时清除 |
 
 ## GitHub OAuth 一键登录
@@ -33,13 +34,13 @@
 5. 站点读取 fragment 后立刻 `location.replace` 清掉 hash，并进入 `?oauth=1`；`gateGh()` 拉取/合并 Gist 后正式进入
 6. 网页端只拿到短期 token，不接触 client_secret；Worker 不保存 token
 
-这样朋友只点一次 GitHub 授权，不用理解 PAT；令牌登录仍保留为备用。部署与 OAuth App 创建见 `cloudflare/README.md`。
+这样朋友只点一次 GitHub 授权，不用理解 PAT。部署与 OAuth App 创建见 `cloudflare/README.md`。
 
 ## GitHub Gist 同步
 
 - 文件固定为 `cet-sprint.json`，gist 为 private
 - 内容结构：`{ mode, cet6: {...}, cet4: {...} }`
-- 写入：`PATCH /gists/{id}`，找不到就 `POST /gists` 新建；保存做了 1.5 秒防抖
+- 写入：`PATCH /gists/{id}`，找不到就 `POST /gists` 新建；保存做了 0.4 秒防抖
 - 读取：登录时 `GET /gists?per_page=100` 找同名文件，再 `GET /gists/{id}`
 - 冲突：同一账号多设备同时写会互相覆盖（最后写入生效），2-3 人各自一个账号时没有这个问题
 
