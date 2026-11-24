@@ -109,12 +109,12 @@ header{position:static;background:transparent;border-bottom:1px solid var(--line
 .sync-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 .sync-actions .btn{padding:8px 14px;font-size:13px}
 .sync-toast{font-size:12px;color:var(--ok);min-height:18px;margin-top:6px}
-#syncToast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:9999;max-width:min(92vw,420px);min-height:0;margin:0;padding:9px 14px;border:1px solid var(--line);border-radius:10px;background:var(--card);box-shadow:0 8px 28px rgba(15,23,42,.18);text-align:center;display:none}
+#syncToast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:9999;max-width:min(92vw,420px);min-height:0;margin:0;padding:9px 14px;border:1px solid var(--line);border-radius:10px;background:var(--card);box-shadow:0 8px 28px rgba(15,23,42,.18);text-align:center;display:none;pointer-events:none}
 #syncToast:not(:empty){display:block}
 .sync-error{color:#b45309}
 .account-line{font-size:13px;color:var(--sub);margin:2px 0 10px}
 .account-line b{color:var(--ink)}
-.link-input{width:100%;border:1px solid var(--line);border-radius:10px;padding:12px;font-size:14px;font-family:inherit;background:var(--card);color:var(--ink);margin-top:10px}
+.link-input{width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:10px;padding:12px;font-size:14px;font-family:inherit;background:var(--card);color:var(--ink);margin-top:10px}
 .link-input:focus{outline:2px solid var(--brand);outline-offset:1px;border-color:transparent}
 #linkModal .box{max-width:520px}
 #linkModal{z-index:60}
@@ -405,9 +405,10 @@ window.openProfile=function(){
  var tok=localStorage.getItem('cet_token'),gh=localStorage.getItem('gh_token');
  var guest=localStorage.getItem('guest_mode')==='1';
  var user=localStorage.getItem('cet_user')||localStorage.getItem('gh_user')||'';
+ var lineUser=String(user||'GitHub').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
  var qlv=(location.search.match(/[?&]level=(cet4|cet6)/)||[])[1];var cur=qlv||localStorage.getItem('cet_level')||'cet6';
  var other=(cur==='cet4')?'六级':'四级';
- var accountLine=(gh||tok)?('已登录：<b>'+esc(user||'GitHub')+'</b>'):(guest?'游客模式 · 未登录':'未登录');
+ var accountLine=(gh||tok)?('已登录：<b>'+lineUser+'</b>'):(guest?'游客模式 · 未登录':'未登录');
  var actions='<button class="btn ghost" onclick="switchLevel(\''+(other==='四级'?'cet4':'cet6')+'\')">切换到'+other+'</button>';
  if(gh||tok){
    actions+='<button class="btn ghost" onclick="switchGh()">切换 GitHub 账号</button>'
@@ -1335,7 +1336,7 @@ function applyLinkText(str){
     var logo=document.querySelector('.logo');if(logo)logo.innerHTML=(LV==='cet4'?'四级':'六级')+'<b>冲刺</b>背诵';
     var cd=document.getElementById('countdown');if(cd)cd.style.display='';
     return true;
-  }catch(e){showSyncToast('恢复失败：'+e.message);return false;}
+  }catch(e){showSyncToast('恢复失败：链接或同步码不完整');return false;}
 }
 window.openLinkImport=function(){
   var el=document.getElementById('linkInput');
