@@ -377,12 +377,35 @@ window.openProfile=function(){
  var guest=localStorage.getItem('guest_mode')==='1';
  var qlv=(location.search.match(/[?&]level=(cet4|cet6)/)||[])[1];var cur=qlv||localStorage.getItem('cet_level')||'cet6';
  var other=(cur==='cet4')?'六级':'四级';
+ var actions='<button class="btn ghost" onclick="switchLevel(\''+(other==='四级'?'cet4':'cet6')+'\')">切换到'+other+'</button>';
+ if(gh||tok){
+   actions+='<button class="btn ghost" onclick="switchGh()">切换 GitHub 账号</button>'
+     +'<button class="btn ghost" onclick="logout()">退出登录</button>';
+ }else if(guest){
+   actions+='<button class="btn" onclick="loginGuestToGh()">登录 GitHub</button>'
+     +'<button class="btn ghost" onclick="logout()">退出登录</button>';
+ }else{
+   actions+='<button class="btn" onclick="loginGuestToGh()">登录 GitHub</button>';
+ }
  var h='<div class="section"><h2>账号与模式</h2>'
-  +'<div class="qactions"><button class="btn ghost" onclick="switchLevel(\''+(other==='四级'?'cet4':'cet6')+'\')">切换到'+other+'</button>'
-  +((gh||tok||guest)?'<button class="btn ghost" onclick="logout()">退出登录</button>':'<button class="btn ghost" onclick="closeProfile();showGate()">登录 GitHub</button>')
-  +'</div></div>';
+  +'<div class="qactions">'+actions+'</div></div>';
  document.getElementById('profileBody').innerHTML=h;
  document.getElementById('profileModal').classList.add('open');
+};
+window.loginGuestToGh=function(){
+ closeProfile();showGate();gateMsg('登录后会把本机进度合并到账号');gateCloud();
+};
+window.switchGh=function(){
+ try{
+  localStorage.setItem('cet_switch_backup_v1',JSON.stringify({
+   cet6:JSON.parse(localStorage.getItem('cet6_progress_v1')||'{}'),
+   cet4:JSON.parse(localStorage.getItem('cet4_progress_v1')||'{}')
+  }));
+ }catch(e){}
+ ['gh_token','gh_gist_id','gh_user','gh_avatar','gh_scope','cet_user','sync_error','sync_last'].forEach(function(k){localStorage.removeItem(k);});
+ localStorage.removeItem('cet_entered');
+ localStorage.setItem('gh_switch','1');
+ closeProfile();showGate();gateMsg('登录另一个 GitHub 账号');
 };
 window.pullCloud=async function(){
  var tk=localStorage.getItem('gh_token');
@@ -414,7 +437,7 @@ window.pushCloud=async function(){
 };
 
 window.closeProfile=function(){document.getElementById('profileModal').classList.remove('open');};
-window.logout=function(){localStorage.removeItem('cet_token');localStorage.removeItem('gh_token');localStorage.removeItem('gh_gist_id');localStorage.removeItem('cet_user');localStorage.removeItem('guest_mode');localStorage.removeItem('cet_entered');localStorage.removeItem('sync_last');localStorage.removeItem('sync_error');localStorage.removeItem('gh_scope');location.href='?';};
+window.logout=function(){localStorage.removeItem('cet_token');localStorage.removeItem('gh_token');localStorage.removeItem('gh_gist_id');localStorage.removeItem('cet_user');localStorage.removeItem('guest_mode');localStorage.removeItem('cet_entered');localStorage.removeItem('gh_switch');localStorage.removeItem('sync_last');localStorage.removeItem('sync_error');localStorage.removeItem('gh_scope');location.href='?';};
 window.switchLevel=function(lv){
  localStorage.setItem('cet_level',lv);
  if(localStorage.getItem('gh_token')){
@@ -1322,7 +1345,7 @@ renderDays();renderTabs();renderTip();renderCards();renderTask();updateProg();re
 <script>
 var gMode=(function(){var q=(location.search.match(/[?&]level=(cet4|cet6)/)||[])[1];return q||'';})(), gWhich='gh';
 var CLOUD_AUTH='https://cet-sprint-auth.cet-sprint.workers.dev'; // Cloudflare OAuth Worker
-window.gateGuest=function(){if(!gMode){gateMsg('先选四级或六级');return;}localStorage.setItem('guest_mode','1');localStorage.setItem('cet_entered','1');localStorage.setItem('cet_level',gMode);location.href='?level='+gMode;};
+window.gateGuest=function(){if(!gMode){gateMsg('先选四级或六级');return;}localStorage.removeItem('gh_switch');localStorage.setItem('guest_mode','1');localStorage.setItem('cet_entered','1');localStorage.setItem('cet_level',gMode);location.href='?level='+gMode;};
 window.gateCloud=function(){if(!gMode){gateMsg('先选四级或六级');return;}if(!CLOUD_AUTH){gateMsg('一键登录还没配置好');return;}localStorage.setItem('cet_level',gMode);location.href=CLOUD_AUTH.replace(/\/$/,'')+'/auth?level='+gMode;};
 window.showGate=function(){var q=(location.search.match(/[?&]level=(cet4|cet6)/)||[])[1];gMode=q||localStorage.getItem('cet_level')||'';if(gMode!=='cet4'&&gMode!=='cet6')gMode='';gateLevelUI();var g=document.getElementById('gate');if(g)g.classList.add('open');gateMsg('');gateBusy(false);};
 function gatePick(el){document.querySelectorAll('.g-lv').forEach(function(x){x.classList.remove('on');});el.classList.add('on');gMode=el.dataset.lv;gateReady();gateMsg('');}
@@ -1355,19 +1378,21 @@ async function gateGh(){
   var data={mode:gMode,cet6:{},cet4:{}};
   if(hit){var g=await gApi('/gists/'+hit.id,{token:token});try{data=JSON.parse(g.files[FILE].content)||data;}catch(e){}}
   var l6={},l4={};
+  var switching=localStorage.getItem('gh_switch')==='1';
   try{
    l6=JSON.parse(localStorage.getItem('cet6_progress_v1')||'{}');
    l4=JSON.parse(localStorage.getItem('cet4_progress_v1')||'{}');
-   data.cet6=mergeProg(l6,data.cet6||{});
-   data.cet4=mergeProg(l4,data.cet4||{});
+   if(switching){data.cet6=data.cet6||{};data.cet4=data.cet4||{};}
+   else{data.cet6=mergeProg(l6,data.cet6||{});data.cet4=mergeProg(l4,data.cet4||{});}
   }catch(e){}
   var target=gMode;
-  var curLocal=(gMode==='cet4'?l4:l6);
+  var curLocal=switching?{}:(gMode==='cet4'?l4:l6);
   var other=(gMode==='cet4'?'cet6':'cet4');
   var otherCloud=data[other]||{};
   if(progWeight(curLocal)===0&&progWeight(data[gMode]||{})===0&&progWeight(otherCloud)>0)target=other;
   data.mode=target;
   localStorage.removeItem('guest_mode');
+  localStorage.removeItem('gh_switch');
   localStorage.setItem('cet_entered','1');
   localStorage.setItem('gh_token',token);
   localStorage.setItem('gh_user',me.login);
