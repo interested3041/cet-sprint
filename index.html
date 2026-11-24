@@ -373,17 +373,11 @@ document.addEventListener('visibilitychange',function(){if(document.visibilitySt
 window.openProfile=function(){
  var tok=localStorage.getItem('cet_token'),gh=localStorage.getItem('gh_token');
  var guest=localStorage.getItem('guest_mode')==='1';
- var u=localStorage.getItem('cet_user')||(guest?'游客':'未登录');
- var qlv=(location.search.match(/[?&]level=(cet4|cet6)/)||[])[1];var cur=qlv||localStorage.getItem('cet_level')||'cet6', curName=(cur==='cet4'?'四级':'六级');
+ var qlv=(location.search.match(/[?&]level=(cet4|cet6)/)||[])[1];var cur=qlv||localStorage.getItem('cet_level')||'cet6';
  var other=(cur==='cet4')?'六级':'四级';
- function esc2(x){return String(x==null?'':x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
- var err=localStorage.getItem('sync_error'),scope=localStorage.getItem('gh_scope')||'';
- var st=(gh||tok)?('已登录，自动同步'+(err?' · 上次失败':'')):(guest?'游客 · 只在本机':'未登录 · 只在本机');
- var warn=(gh&&scope&&scope.indexOf('gist')<0)?'<p style="color:#b45309;font-size:12px;margin-top:8px">授权缺少 gist 权限，请重新登录。</p>':'';
- var h='<div class="section"><h2>👤 '+esc2(u)+'</h2>'
-  +'<p style="color:var(--sub);font-size:13px">当前：'+curName+'冲刺 · '+esc2(st)+'</p>'+warn
+ var h='<div class="section"><h2>账号与模式</h2>'
   +'<div class="qactions"><button class="btn ghost" onclick="switchLevel(\''+(other==='四级'?'cet4':'cet6')+'\')">切换到'+other+'</button>'
-  +((gh||tok)?'<button class="btn ghost" onclick="logout()">退出登录</button>':'<button class="btn ghost" onclick="closeProfile();showGate()">登录 GitHub</button>')
+  +((gh||tok||guest)?'<button class="btn ghost" onclick="logout()">退出登录</button>':'<button class="btn ghost" onclick="closeProfile();showGate()">登录 GitHub</button>')
   +'</div></div>';
  document.getElementById('profileBody').innerHTML=h;
  document.getElementById('profileModal').classList.add('open');
@@ -415,7 +409,7 @@ window.pushCloud=async function(){
 };
 
 window.closeProfile=function(){document.getElementById('profileModal').classList.remove('open');};
-window.logout=function(){localStorage.removeItem('cet_token');localStorage.removeItem('gh_token');localStorage.removeItem('gh_gist_id');localStorage.removeItem('cet_user');localStorage.removeItem('guest_mode');localStorage.removeItem('sync_last');localStorage.removeItem('sync_error');localStorage.removeItem('gh_scope');location.href='?';};
+window.logout=function(){localStorage.removeItem('cet_token');localStorage.removeItem('gh_token');localStorage.removeItem('gh_gist_id');localStorage.removeItem('cet_user');localStorage.removeItem('guest_mode');localStorage.removeItem('cet_entered');localStorage.removeItem('sync_last');localStorage.removeItem('sync_error');localStorage.removeItem('gh_scope');location.href='?';};
 window.switchLevel=function(lv){
  localStorage.setItem('cet_level',lv);
  if(localStorage.getItem('gh_token')){
@@ -1186,6 +1180,8 @@ function tryApply(str,ask){
     if(!o||o.v!==1)throw new Error('版本不符');
     if(ask&&!confirm('打开链接恢复进度？会覆盖本机当前记录。'))return false;
     applyCode(o);
+    localStorage.setItem('cet_entered','1');
+    var gate=document.getElementById('gate');if(gate)gate.classList.remove('open');
     alert('已恢复：'+summarize(o));
     return true;
   }catch(e){alert('恢复失败：'+e.message);return false;}
@@ -1298,7 +1294,7 @@ renderDays();renderTabs();renderTip();renderCards();renderTask();updateProg();re
 <script>
 var gMode=(function(){var q=(location.search.match(/[?&]level=(cet4|cet6)/)||[])[1];return q||'';})(), gWhich='gh';
 var CLOUD_AUTH='https://cet-sprint-auth.cet-sprint.workers.dev'; // Cloudflare OAuth Worker
-window.gateGuest=function(){if(!gMode){gateMsg('先选四级或六级');return;}localStorage.setItem('guest_mode','1');localStorage.setItem('cet_level',gMode);location.href='?level='+gMode;};
+window.gateGuest=function(){if(!gMode){gateMsg('先选四级或六级');return;}localStorage.setItem('guest_mode','1');localStorage.setItem('cet_entered','1');localStorage.setItem('cet_level',gMode);location.href='?level='+gMode;};
 window.gateCloud=function(){if(!gMode){gateMsg('先选四级或六级');return;}if(!CLOUD_AUTH){gateMsg('一键登录还没配置好');return;}localStorage.setItem('cet_level',gMode);location.href=CLOUD_AUTH.replace(/\/$/,'')+'/auth?level='+gMode;};
 window.showGate=function(){var q=(location.search.match(/[?&]level=(cet4|cet6)/)||[])[1];gMode=q||localStorage.getItem('cet_level')||'';if(gMode!=='cet4'&&gMode!=='cet6')gMode='';gateLevelUI();var g=document.getElementById('gate');if(g)g.classList.add('open');gateMsg('');gateBusy(false);};
 function gatePick(el){document.querySelectorAll('.g-lv').forEach(function(x){x.classList.remove('on');});el.classList.add('on');gMode=el.dataset.lv;gateReady();gateMsg('');}
@@ -1344,6 +1340,7 @@ async function gateGh(){
   if(progWeight(curLocal)===0&&progWeight(data[gMode]||{})===0&&progWeight(otherCloud)>0)target=other;
   data.mode=target;
   localStorage.removeItem('guest_mode');
+  localStorage.setItem('cet_entered','1');
   localStorage.setItem('gh_token',token);
   localStorage.setItem('gh_user',me.login);
   localStorage.setItem('cet_user',me.login);
@@ -1383,8 +1380,8 @@ async function gateGh(){
 })();
 (function(){
  gateLevelUI();
- var gh=localStorage.getItem('gh_token'),sv=localStorage.getItem('cet_token'),guest=localStorage.getItem('guest_mode')==='1';
- if(!gh&&!sv&&!guest){
+ var gh=localStorage.getItem('gh_token'),sv=localStorage.getItem('cet_token'),guest=localStorage.getItem('guest_mode')==='1',entered=localStorage.getItem('cet_entered')==='1';
+ if(!gh&&!sv&&!guest&&!entered){
    var logo=document.querySelector('.logo');
    if(logo)logo.innerHTML=(gMode?(gMode==='cet4'?'四级':'六级'):'四六级')+'<b>冲刺</b>背诵';
    var cd=document.getElementById('countdown');if(cd)cd.style.display='none';
