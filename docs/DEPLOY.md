@@ -39,19 +39,13 @@ curl -I https://interested3041.github.io/cet-sprint/
 
 朋友以后只点一次「GitHub 一键登录」，不用生成 PAT。
 
-### 备用：GitHub 令牌
+### 令牌入口
 
-如果一键登录临时不可用，登录页还保留「改用 GitHub 令牌登录（备用）」：
+当前登录页不再显示令牌输入框。一键登录失败时，回到登录门重试，或先用「游客进入」。
 
-1. 头像 → Settings → Developer settings → **Personal access tokens → Fine-grained tokens**
-2. Permissions → Account permissions → 只勾 **Gists: Read and write**
-3. 生成后复制 `github_pat_…`，贴进备用令牌框
+## 三、自建账号服务（源码保留）
 
-令牌只存在浏览器 localStorage，不会上传；不要多人共用一个令牌。
-
-## 三、自建服务器（可选）
-
-适合「不想每人一个令牌」「想用账号密码」的多人场景。
+`server/` 的旧账号服务源码仍保留，但当前登录页不再提供「自建服务器」入口，普通部署不需要它。
 
 ```bash
 cd server
@@ -59,7 +53,7 @@ node server.js            # 默认 8080，PORT 可改
 ```
 
 - 数据文件：`server/data/db.json`（首次写入自动创建，已在 .gitignore 里）
-- 账号：登录页「自建服务器」标签注册
+- 账号：源码接口仍可注册；当前登录页不显示这个入口
 - 公网必须 HTTPS，否则密码明文；用 Nginx 反代示例：
 
 ```nginx
