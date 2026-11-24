@@ -1182,6 +1182,8 @@ function tryApply(str,ask){
     applyCode(o);
     localStorage.setItem('cet_entered','1');
     var gate=document.getElementById('gate');if(gate)gate.classList.remove('open');
+    var logo=document.querySelector('.logo');if(logo)logo.innerHTML=(LV==='cet4'?'四级':'六级')+'<b>冲刺</b>背诵';
+    var cd=document.getElementById('countdown');if(cd)cd.style.display='';
     alert('已恢复：'+summarize(o));
     return true;
   }catch(e){alert('恢复失败：'+e.message);return false;}
