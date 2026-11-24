@@ -102,6 +102,14 @@ header{position:static;background:transparent;border-bottom:1px solid var(--line
 .section h4{font-size:14px;margin:14px 0 6px;color:var(--brand)}
 .section p,.section li{font-size:13.5px;color:var(--ink)}
 .section ul{padding-left:20px;margin:6px 0}
+.sync-card{border:1px solid var(--line);border-radius:14px;padding:14px;margin:10px 0;background:var(--card)}
+.sync-title{font-size:14px;font-weight:700;color:var(--ink);display:flex;align-items:center;gap:6px}
+.sync-title small{font-weight:400;color:var(--sub);font-size:11.5px}
+.sync-desc{font-size:12.5px;color:var(--sub);line-height:1.6;margin:5px 0 0}
+.sync-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.sync-actions .btn{padding:8px 14px;font-size:13px}
+.sync-toast{font-size:12px;color:var(--ok);min-height:18px;margin-top:6px}
+.sync-error{color:#b45309}
 .modal{position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:50;display:none;align-items:flex-start;justify-content:center;padding:20px;overflow:auto}
 .modal.open{display:flex}
 .modal .box{background:var(--bg);border-radius:14px;max-width:720px;width:100%;padding:18px;margin:auto}
@@ -207,6 +215,7 @@ input,textarea,button{font-family:inherit}
 .g-lv small{display:block;font-weight:400;font-size:11px;color:#6b7280;margin-top:3px}
 .g-lv.on{border-color:#9db2ff;background:#eef2ff;box-shadow:0 0 0 3px #edf1ff}
 .g-btn{width:100%;margin-top:16px;padding:13px;border:0;border-radius:12px;background:linear-gradient(90deg,#2f55d4,#7c3aed);color:#fff;font-size:15px;font-weight:700;cursor:pointer}
+.g-btn:disabled{opacity:.45;cursor:not-allowed;background:#9aa8c7}
 .g-ghost{width:100%;margin-top:9px;padding:11px;border:1px solid #e5e9f4;border-radius:12px;background:#fff;color:#2f55d4;font-size:14px;font-weight:600;cursor:pointer}
 .g-msg{margin-top:10px;font-size:13px;color:#dc2626;min-height:17px}
 .g-foot{margin-top:9px;color:#6b7280;font-size:11.5px;line-height:1.7}
@@ -218,33 +227,18 @@ input,textarea,button{font-family:inherit}
 <div id="gate">
  <div class="g-card">
   <div class="g-brand">四六级冲刺背诵</div>
-  <div class="g-slogan">不登录也能背；登录后换设备自动同步</div>
-  <div class="g-tabs2"><div class="on" data-tab="gh" onclick="gateTab('gh')">GitHub 直连</div><div data-tab="sv" id="gTabSv" onclick="gateTab('sv')">自建服务器</div></div>
-  <label class="g-label">先背哪一级</label>
+  <div class="g-slogan">先选级别，再开始；不登录也能用</div>
+  <label class="g-label">选择级别（必选）</label>
   <div class="g-levels">
    <div class="g-lv" data-lv="cet4" onclick="gatePick(this)">四级<small>20 天 · 2000 词 + 小测</small></div>
-   <div class="g-lv on" data-lv="cet6" onclick="gatePick(this)">六级<small>20 天 · 1200 词 + 小测</small></div>
+   <div class="g-lv" data-lv="cet6" onclick="gatePick(this)">六级<small>20 天 · 1200 词 + 小测</small></div>
   </div>
-  <button class="g-btn" onclick="gateGuest()">游客进入 · 不用账号，直接背</button>
+  <button class="g-btn" id="gGuest" onclick="gateGuest()" disabled>游客进入 · 不用账号</button>
   <div class="g-or"><i></i>或，用 GitHub 账号自动同步<i></i></div>
-  <button class="g-btn" id="gCloud" onclick="gateCloud()" style="margin-top:0">GitHub 一键登录（推荐，自动同步）</button>
-  <div class="g-foot" style="margin-top:8px">朋友以后只用点这个按钮，不用生成令牌。首次使用需要站长在 GitHub 创建一次 OAuth App。</div>
-  <button class="g-ghost" onclick="gateTokenPane()">改用 GitHub 令牌登录（备用）</button>
-  <div id="gPaneGh" class="g-hidden">
-   <label class="g-label">GitHub 令牌（备用方式）</label>
-   <input class="g-input" id="ghToken" type="password" autocomplete="off" placeholder="ghp_… 或 github_pat_…">
-   <div class="g-foot">只在必要时用：<a href="https://github.com/settings/tokens/new?scopes=gist&description=cet-sprint" target="_blank" rel="noopener" style="color:#2f55d4;font-weight:700">生成令牌</a>（已预选 gist 权限）。令牌只存这台设备；一键登录失败时再走这里。</div>
-  </div>
-  <div id="gPaneSv" class="g-hidden">
-   <label class="g-label">账号</label>
-   <input class="g-input" id="gUser" placeholder="服务器账号">
-   <label class="g-label">密码</label>
-   <input class="g-input" id="gPass" type="password" placeholder="至少 4 位">
-  </div>
-  <button class="g-ghost g-hidden" id="gGo" onclick="gateGo()" style="margin-top:10px">令牌登录并开始背诵（自动同步）</button>
-  <button class="g-ghost g-hidden" id="gReg" onclick="gateReg()">没有服务器账号？注册一个</button>
+  <button class="g-btn" id="gCloud" onclick="gateCloud()" style="margin-top:0" disabled>GitHub 一键登录</button>
+  <input type="hidden" id="ghToken" autocomplete="off">
   <div class="g-msg" id="gMsg"></div>
-  <div class="g-foot">游客数据存本机；换设备点「☁ 同步」导出 JSON 或生成链接即可。登录用户自动云同步。</div>
+  <div class="g-foot">登录后换设备自动同步；不登录就在「同步」里生成链接。</div>
  </div>
 </div>
 
@@ -302,16 +296,7 @@ input,textarea,button{font-family:inherit}
   </div>
 </div>
 
-<div class="lockscreen" id="lockScreen">
-  <div class="lockbox">
-    <div style="font-size:20px;font-weight:800;color:var(--brand)">六级冲刺背诵</div>
-    <div style="color:var(--sub);font-size:13px;margin:6px 0 14px">这台设备设了访问口令，请输入后继续</div>
-    <input class="qinput" style="min-height:auto;padding:11px;text-align:center" id="lockIn" type="password" placeholder="4 位以上口令" onkeydown="if(event.key==='Enter')unlock()">
-    <div class="qactions"><button class="btn" onclick="unlock()">解锁</button></div>
-  </div>
-</div>
-
-<footer>数据内联 · 进度存本机 · 换设备用「☁ 同步」生成链接，新设备打开即恢复 · 发音需联网</footer>
+<footer>进度存本机 · 换设备用「☁ 同步」</footer>
 
 <script>
 function ghReq(path, method, body){
@@ -392,17 +377,14 @@ window.openProfile=function(){
  var qlv=(location.search.match(/[?&]level=(cet4|cet6)/)||[])[1];var cur=qlv||localStorage.getItem('cet_level')||'cet6', curName=(cur==='cet4'?'四级':'六级');
  var other=(cur==='cet4')?'六级':'四级';
  function esc2(x){return String(x==null?'':x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
- var last=localStorage.getItem('sync_last'),err=localStorage.getItem('sync_error'),scope=localStorage.getItem('gh_scope')||'';
- var lastTxt='';
- try{lastTxt=last?new Date(last).toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}):'';}catch(e){}
- var st=(gh||tok)?('已连接账号，进度自动同步'+(lastTxt?' · 最近同步 '+lastTxt:' · 还没同步过')+(err?' · 上次失败：'+err:'')):(guest?'游客模式，数据只在本机，可导出/生成同步链接':'未登录，数据只在本机');
- var warn=(gh&&scope&&scope.indexOf('gist')<0)?'<p style="color:#b45309;font-size:12px;margin-top:8px">这次授权不含 gist 权限，云端读写会失败；请退出后重新点「GitHub 一键登录」。</p>':'';
+ var err=localStorage.getItem('sync_error'),scope=localStorage.getItem('gh_scope')||'';
+ var st=(gh||tok)?('已登录，自动同步'+(err?' · 上次失败':'')):(guest?'游客 · 只在本机':'未登录 · 只在本机');
+ var warn=(gh&&scope&&scope.indexOf('gist')<0)?'<p style="color:#b45309;font-size:12px;margin-top:8px">授权缺少 gist 权限，请重新登录。</p>':'';
  var h='<div class="section"><h2>👤 '+esc2(u)+'</h2>'
   +'<p style="color:var(--sub);font-size:13px">当前：'+curName+'冲刺 · '+esc2(st)+'</p>'+warn
-  +'<div class="qactions"><button class="btn" onclick="switchLevel(\''+(other==='四级'?'cet4':'cet6')+'\')">切换到'+other+'</button></div>'
-  +(gh?'<div class="qactions"><button class="btn ghost" onclick="pullCloud()">从云端拉取（覆盖本机）</button><button class="btn ghost" onclick="pushCloud()">立即上传本机</button></div>':'')
-  +((gh||tok)?'<div class="qactions"><button class="btn ghost" onclick="logout()">退出登录</button></div>':'<div class="qactions"><button class="btn ghost" onclick="showGate()">登录 / 换设备同步</button></div>')
-  +'<p style="color:var(--sub);font-size:12px;margin-top:10px">游客进度会在登录时合并到云端；只想临时换设备就用「☁ 同步」导出或生成链接。</p></div>';
+  +'<div class="qactions"><button class="btn ghost" onclick="switchLevel(\''+(other==='四级'?'cet4':'cet6')+'\')">切换到'+other+'</button>'
+  +((gh||tok)?'<button class="btn ghost" onclick="logout()">退出登录</button>':'<button class="btn ghost" onclick="closeProfile();showGate()">登录 GitHub</button>')
+  +'</div></div>';
  document.getElementById('profileBody').innerHTML=h;
  document.getElementById('profileModal').classList.add('open');
 };
@@ -476,10 +458,10 @@ var CATS=[
   {k:'listening',n:'听力',c:10,color:'var(--listen)'}
 ].filter(function(c){return DAYS.some(function(d){return d[c.k]&&d[c.k].length;});});
 var STORE=(LV==='cet4'?'cet4_progress_v1':'cet6_progress_v1');
-var state={day:0,cat:'reading',test:false,shuffle:false,unknown:false,marks:{},revealed:{},daily:{},sched:{},acct:'',bannerOff:'',errFilter:'all',errQuery:''};
+var state={day:0,cat:'reading',test:false,shuffle:false,unknown:false,marks:{},revealed:{},daily:{},sched:{},bannerOff:'',errFilter:'all',errQuery:''};
 
-function load(){try{var s=JSON.parse(localStorage.getItem(STORE));if(s&&s.marks)state.marks=s.marks;if(s&&s.daily)state.daily=s.daily;if(s&&s.sched)state.sched=s.sched;if(s&&s.acct)state.acct=s.acct;state.acct=localStorage.getItem('cet6_acct_v1')||state.acct;state.bannerOff=localStorage.getItem('cet6_banner_v1')||'';}catch(e){}}
-function payload(){return {marks:state.marks,daily:state.daily,sched:state.sched,acct:state.acct};}
+function load(){try{var s=JSON.parse(localStorage.getItem(STORE));if(s&&s.marks)state.marks=s.marks;if(s&&s.daily)state.daily=s.daily;if(s&&s.sched)state.sched=s.sched;state.bannerOff=localStorage.getItem('cet6_banner_v1')||'';}catch(e){}}
+function payload(){return {marks:state.marks,daily:state.daily,sched:state.sched};}
 window.CET_PAYLOAD=payload;window.CET_LV=LV;
 function save(){try{localStorage.setItem(STORE,JSON.stringify(payload()));}catch(e){}try{if(window.cloudPush)window.cloudPush(LV,payload());}catch(e){}}
 var REV=[1,2,4,7,15];
@@ -1118,10 +1100,11 @@ window.setUnknown=function(v){state.unknown=v;renderCards();updateProg();};
 
 /* ---------- 导出/导入 ---------- */
 window.exportProg=function(){
-  var blob=new Blob([JSON.stringify({marks:state.marks,daily:state.daily,sched:state.sched,acct:state.acct,exported:new Date().toISOString()},null,2)],{type:'application/json'});
+  var blob=new Blob([JSON.stringify({marks:state.marks,daily:state.daily,sched:state.sched,exported:new Date().toISOString()},null,2)],{type:'application/json'});
   var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=META.level+'背诵进度_'+todayStr()+'.json';a.click();
   setTimeout(function(){URL.revokeObjectURL(a.href);},1000);
 };
+window.importClick=function(){document.getElementById('impFile').click();};
 window.importProg=function(inp){
   var f=inp.files[0];if(!f)return;
   var r=new FileReader();
@@ -1129,9 +1112,9 @@ window.importProg=function(inp){
     try{var o=JSON.parse(r.result);if(o.marks||o.daily){
       var n=0;if(o.marks){for(var k in o.marks){state.marks[k]=o.marks[k];n++;}}
       var m=0;if(o.daily){for(var d in o.daily){state.daily[d]=o.daily[d];m++;}}if(o.sched){for(var sk in o.sched)state.sched[sk]=o.sched[sk];}
-      save();renderCards();updateProg();renderBanner();alert('已导入 '+n+' 条单词进度、'+m+' 天小测记录');
-    }else alert('文件格式不符');}
-    catch(e){alert('导入失败：'+e.message);}
+      save();renderCards();updateProg();renderBanner();showSyncToast('已导入 '+n+' 词、'+m+' 天小测');
+    }else showSyncToast('文件格式不对');}
+    catch(e){showSyncToast('导入失败：'+e.message);}
     inp.value='';
   };
   r.readAsText(f);
@@ -1172,11 +1155,11 @@ window.makeCode=function(){
   for(var d in state.daily){var a=state.daily[d];if(!a)continue;
     q[d]=[a.l||[],a.r||[],String(a.t||'').slice(0,160),String(a.w||'').slice(0,160),a.submitted?1:0];
   }
-  return b64e(JSON.stringify({v:1,a:state.acct||'',k:rle(known),u:rle(unknown),s:sched.join(';'),q:q,t:todayStr()}));
+  return b64e(JSON.stringify({v:1,k:rle(known),u:rle(unknown),s:sched.join(';'),q:q,t:todayStr()}));
 };
 window.syncURL=function(){return location.href.split('#')[0]+'#sync='+makeCode();};
 function summarize(o){
-  return '来自 '+(o.t||'未知日期')+(o.a?(' · 账号 '+o.a):'')+'：已掌握 '+unrle(o.k).length+' 词，未掌握 '+unrle(o.u).length+' 词，复习排期 '+((o.s||'')?o.s.split(';').length:0)+' 条，小测 '+Object.keys(o.q||{}).length+' 天。';
+  return '已掌握 '+unrle(o.k).length+' 词 · 小测 '+Object.keys(o.q||{}).length+' 天';
 }
 function applyCode(o){
   buildSlots();
@@ -1190,7 +1173,6 @@ function applyCode(o){
   var dl={};
   for(var d in (o.q||{})){var a=o.q[d];dl[d]={l:a[0]||[],r:a[1]||[],t:a[2]||'',w:a[3]||'',submitted:!!a[4]};}
   state.daily=dl;
-  if(o.a){state.acct=o.a;localStorage.setItem('cet6_acct_v1',o.a);}
   save();renderDays&&renderDays();renderTabs();renderTip();renderCards();renderTask&&renderTask();renderBanner&&renderBanner();updateProg();
 }
 function extractCode(str){
@@ -1202,87 +1184,78 @@ function tryApply(str,ask){
   try{
     var o=JSON.parse(b64d(extractCode(str)));
     if(!o||o.v!==1)throw new Error('版本不符');
-    if(ask&&!confirm('恢复同步进度？\n'+summarize(o)+'\n\n本机当前进度会被覆盖。'))return false;
+    if(ask&&!confirm('打开链接恢复进度？会覆盖本机当前记录。'))return false;
     applyCode(o);
-    alert('已恢复进度：'+summarize(o));
+    alert('已恢复：'+summarize(o));
     return true;
   }catch(e){alert('恢复失败：'+e.message);return false;}
 }
 window.openSync=function(){
   buildSlots();
-  var h='<div class="section"><h2>☁ 同步进度</h2>'
-   +'<p style="color:var(--sub);font-size:13px;line-height:1.8">没有账号也能同步：旧设备点「生成同步链接」或导出 JSON，发到新设备打开/导入即可。登录后才会自动云同步；游客数据在登录时会合并，不会丢。</p>'
-   +'<div class="qactions"><button class="btn" onclick="genLink()">🔗 生成同步链接</button><button class="btn ghost" onclick="shareLink()">分享给微信</button><button class="btn ghost" onclick="copyLink()">复制</button></div>'
-   +'<div id="linkBox" style="margin-top:8px;font-size:12px;color:var(--sub);line-height:1.7"></div>'
-   +'<h4>从链接 / 同步码恢复</h4>'
-   +'<textarea class="qinput" id="syncIn" placeholder="粘贴整条链接，或 #sync= 后面那串码"></textarea>'
-   +'<div class="qactions"><button class="btn" onclick="applyInput()">恢复进度</button></div>'
-   +'<h4>同步账号（只作标识）</h4>'
-   +'<input class="qinput" style="min-height:auto;padding:10px" id="acctIn" value="'+esc(state.acct||'')+'" placeholder="例如 小米的六级，可留空">'
-   +'<div class="qactions"><button class="btn ghost" onclick="saveAcct()">保存昵称</button></div>'
-   +'<h4>本机访问口令（可选）</h4>'
-   +'<input class="qinput" style="min-height:auto;padding:10px" id="passIn" type="password" placeholder="留空并保存 = 关闭口令；仅本机校验，不是服务器认证">'
-   +'<div class="qactions"><button class="btn ghost" onclick="savePass()">保存口令设置</button></div>'
-   +'<h4>文件备份</h4>'
-   +'<div class="qactions"><button class="btn ghost" onclick="exportProg()">⬇ 导出 JSON</button><button class="btn ghost" onclick="document.getElementById(\'impFile\').click()">⬆ 导入 JSON</button></div>'
-   +'</div>';
+  var gh=localStorage.getItem('gh_token');
+  var user=localStorage.getItem('cet_user')||localStorage.getItem('gh_user')||'';
+  var err=localStorage.getItem('sync_error')||'';
+  var account=gh
+    ? '<div class="sync-title">账号同步 <small>自动</small></div>'
+      +'<p class="sync-desc">已登录 '+esc(user||'GitHub')+'，每次标记自动同步；下面两个按钮只用于补一次。</p>'
+      +'<div class="sync-actions"><button class="btn" onclick="syncUpload()">一键上传</button><button class="btn ghost" onclick="pullCloud()">一键导入</button></div>'
+      +(err?'<div class="sync-toast sync-error">上次失败：'+esc(err)+'</div>':'')
+    : '<div class="sync-title">账号同步</div>'
+      +'<p class="sync-desc">登录 GitHub 后自动同步，不用链接和文件。</p>'
+      +'<div class="sync-actions"><button class="btn" onclick="loginFromSync()">登录 GitHub</button></div>';
+  var h='<div class="section"><h2>同步与备份</h2>'
+   +'<div class="sync-card">'+account+'</div>'
+   +'<div class="sync-card"><div class="sync-title">链接同步 <small>不用账号</small></div>'
+   +'<p class="sync-desc">生成后自动复制，发到微信或新设备，打开就恢复。</p>'
+   +'<div class="sync-actions"><button class="btn" onclick="genLink()">生成并复制链接</button><button class="btn ghost" onclick="shareLink()">分享到微信</button></div></div>'
+   +'<div class="sync-card"><div class="sync-title">文件备份</div>'
+   +'<p class="sync-desc">留一份 JSON，换设备或以后导入。</p>'
+   +'<div class="sync-actions"><button class="btn ghost" onclick="exportProg()">导出备份</button><button class="btn ghost" onclick="importClick()">导入备份</button></div></div>'
+   +'<div id="syncToast" class="sync-toast"></div></div>';
   document.getElementById('syncBody').innerHTML=h;
   document.getElementById('syncModal').classList.add('open');
-  genLink(true);
 };
 window.closeSync=function(){document.getElementById('syncModal').classList.remove('open');};
-window.genLink=function(quiet){
-  var code=makeCode();
-  var url=location.href.split('#')[0]+'#sync='+code;
-  state.lastLink=url;
-  var box=document.getElementById('linkBox');
-  if(box)box.innerHTML='已生成 · 长度 '+url.length+' 字符 · 含 '+Object.keys(state.marks).length+' 词状态<br><div style="word-break:break-all;color:var(--ink);font-size:11px;max-height:90px;overflow:auto;border:1px dashed var(--line);border-radius:8px;padding:6px;margin-top:6px">'+esc(url)+'</div>';
-  if(!quiet)alert('同步链接已生成，点「分享给微信」或「复制」带走它');
-  return url;
+window.showSyncToast=function(t){
+  var el=document.getElementById('syncToast');
+  if(!el)return;
+  el.textContent=t||'';
+  el.className='sync-toast'+(String(t||'').indexOf('失败')>=0?' sync-error':'');
 };
-window.copyLink=function(){
-  var u=state.lastLink||genLink(true);
-  var done=function(){alert('已复制，粘到微信文件传输助手即可');};
-  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(u).then(done).catch(function(){legacyCopy(u,done);});}
-  else legacyCopy(u,done);
-};
+function copyText(t,cb){
+  var done=function(){if(cb)cb();};
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(t).then(done).catch(function(){legacyCopy(t,done);});
+  }else legacyCopy(t,done);
+}
 function legacyCopy(t,cb){
   var ta=document.createElement('textarea');ta.value=t;ta.style.position='fixed';ta.style.opacity='0';
-  document.body.appendChild(ta);ta.select();try{document.execCommand('copy');cb();}catch(e){alert('复制失败，请手动长按链接复制');}
+  document.body.appendChild(ta);ta.select();
+  var ok=false;try{ok=document.execCommand('copy');}catch(e){}
   document.body.removeChild(ta);
+  if(ok&&cb)cb();else try{prompt('复制这条链接',t);}catch(e){}
 }
+window.genLink=function(){
+  var url=location.href.split('#')[0]+'#sync='+makeCode();
+  state.lastLink=url;
+  copyText(url,function(){showSyncToast('已复制，发到微信即可');});
+  return url;
+};
 window.shareLink=function(){
-  var u=state.lastLink||genLink(true);
-  if(navigator.share){navigator.share({title:'六级冲刺背诵·进度',text:'我的六级背诵进度，换设备打开这条链接即可恢复',url:u}).catch(function(){});}
-  else copyLink();
+  var u=state.lastLink||location.href.split('#')[0]+'#sync='+makeCode();
+  state.lastLink=u;
+  if(navigator.share){
+    navigator.share({title:'四六级背诵进度',text:'打开这条链接就能接着背',url:u}).catch(function(){
+      copyText(u,function(){showSyncToast('已复制，发到微信即可');});
+    });
+  }else copyText(u,function(){showSyncToast('已复制，发到微信即可');});
 };
-window.applyInput=function(){
-  var v=document.getElementById('syncIn').value;
-  if(!v){alert('先粘贴链接或同步码');return;}
-  if(tryApply(v,true)){closeSync();}
+window.syncUpload=async function(){
+  if(!localStorage.getItem('gh_token')){showSyncToast('先登录账号');return;}
+  var ok=await ghSave(LV,payload());
+  showSyncToast(ok?'已上传':'上传失败：'+(localStorage.getItem('sync_error')||'检查网络'));
 };
-window.saveAcct=function(){
-  var v=document.getElementById('acctIn').value.trim();
-  state.acct=v;localStorage.setItem('cet6_acct_v1',v);state.lastLink='';save();alert('昵称已保存');
-};
-window.applyCode=applyCode;
-window.savePass=function(){
-  var v=document.getElementById('passIn').value.trim();
-  if(!v){localStorage.removeItem('cet6_lock_v1');alert('已关闭访问口令');return;}
-  if(v.length<4){alert('至少 4 位');return;}
-  localStorage.setItem('cet6_lock_v1',b64e(v));
-  document.getElementById('passIn').value='';
-  alert('已设置访问口令，下次打开这台设备需要输入');
-};
-window.unlock=function(){
-  var v=document.getElementById('lockIn').value.trim();
-  if(b64e(v)===localStorage.getItem('cet6_lock_v1')){sessionStorage.setItem('cet6_unlocked','1');document.getElementById('lockScreen').classList.remove('open');}
-  else alert('口令不对');
-};
-function initLock(){
-  var lk=localStorage.getItem('cet6_lock_v1');
-  if(lk&&sessionStorage.getItem('cet6_unlocked')!=='1')document.getElementById('lockScreen').classList.add('open');
-}
+window.loginFromSync=function(){closeSync();showGate();};
 function checkHash(){
   var m=(location.hash||'').match(/sync=([^&]+)/);
   if(!m)return;
@@ -1313,7 +1286,6 @@ window.addEventListener('scroll',function(){var f=document.getElementById('fabTo
 var _logo=document.querySelector('.logo');if(_logo)_logo.innerHTML=LVN+'<b>冲刺</b>背诵';
 load();
 initSched();
-initLock();
 checkHash();
 state.day=pickToday();
 initCountdown();
@@ -1324,21 +1296,16 @@ renderDays();renderTabs();renderTip();renderCards();renderTask();updateProg();re
 <button class="fab" id="fabTop" onclick="toTop()" title="回到顶部">↑</button>
 
 <script>
-var gMode=(function(){var q=(location.search.match(/[?&]level=(cet4|cet6)/)||[])[1],l=q||localStorage.getItem('cet_level');return l==='cet4'?'cet4':'cet6';})(), gWhich='gh';
+var gMode=(function(){var q=(location.search.match(/[?&]level=(cet4|cet6)/)||[])[1];return q||'';})(), gWhich='gh';
 var CLOUD_AUTH='https://cet-sprint-auth.cet-sprint.workers.dev'; // Cloudflare OAuth Worker
-window.gateGuest=function(){localStorage.setItem('guest_mode','1');localStorage.setItem('cet_level',gMode);location.href='?level='+gMode;};
-window.gateTokenPane=function(){var pane=document.getElementById('gPaneGh'),go=document.getElementById('gGo');var show=pane.classList.contains('g-hidden');pane.classList.toggle('g-hidden',!show);go.classList.toggle('g-hidden',!show);if(show)setTimeout(function(){document.getElementById('ghToken').focus();},50);};
-window.gateCloud=function(){if(!CLOUD_AUTH){gateMsg('一键登录还没配置好，先点「游客进入」或用令牌登录。');return;}localStorage.setItem('cet_level',gMode);location.href=CLOUD_AUTH.replace(/\/$/,'')+'/auth?level='+gMode;};
-window.gateGuest=function(){localStorage.setItem('guest_mode','1');localStorage.setItem('cet_level',gMode);location.href='?level='+gMode;};
-window.showGate=function(){var q=(location.search.match(/[?&]level=(cet4|cet6)/)||[])[1];gMode=q||(localStorage.getItem('cet_level')==='cet4'?'cet4':'cet6');document.querySelectorAll('.g-lv').forEach(function(x){x.classList.toggle('on',x.dataset.lv===gMode);});var g=document.getElementById('gate');if(g)g.classList.add('open');gateMsg('');gateBusy(false);};
-function gateTab(t){gWhich=t;document.querySelectorAll('.g-tabs2 div').forEach(function(x){x.classList.toggle('on',x.dataset.tab===t);});
- document.getElementById('gPaneGh').classList.toggle('g-hidden',t!=='gh');
- document.getElementById('gPaneSv').classList.toggle('g-hidden',t!=='sv');
- document.getElementById('gReg').classList.toggle('g-hidden',t!=='sv');}
-function gatePick(el){document.querySelectorAll('.g-lv').forEach(function(x){x.classList.remove('on');});el.classList.add('on');gMode=el.dataset.lv;}
-function gateLevelUI(){document.querySelectorAll('.g-lv').forEach(function(x){x.classList.toggle('on',x.dataset.lv===gMode);});}
-function gateMsg(t){document.getElementById('gMsg').textContent=t||'';}
-function gateBusy(b){document.getElementById('gGo').disabled=b;}
+window.gateGuest=function(){if(!gMode){gateMsg('先选四级或六级');return;}localStorage.setItem('guest_mode','1');localStorage.setItem('cet_level',gMode);location.href='?level='+gMode;};
+window.gateCloud=function(){if(!gMode){gateMsg('先选四级或六级');return;}if(!CLOUD_AUTH){gateMsg('一键登录还没配置好');return;}localStorage.setItem('cet_level',gMode);location.href=CLOUD_AUTH.replace(/\/$/,'')+'/auth?level='+gMode;};
+window.showGate=function(){var q=(location.search.match(/[?&]level=(cet4|cet6)/)||[])[1];gMode=q||localStorage.getItem('cet_level')||'';if(gMode!=='cet4'&&gMode!=='cet6')gMode='';gateLevelUI();var g=document.getElementById('gate');if(g)g.classList.add('open');gateMsg('');gateBusy(false);};
+function gatePick(el){document.querySelectorAll('.g-lv').forEach(function(x){x.classList.remove('on');});el.classList.add('on');gMode=el.dataset.lv;gateReady();gateMsg('');}
+function gateLevelUI(){document.querySelectorAll('.g-lv').forEach(function(x){x.classList.toggle('on',x.dataset.lv===gMode);});gateReady();}
+function gateReady(){var ok=!!gMode;['gGuest','gCloud'].forEach(function(id){var b=document.getElementById(id);if(b)b.disabled=!ok;});}
+function gateMsg(t){var el=document.getElementById('gMsg');if(el)el.textContent=t||'';}
+function gateBusy(b){var el=document.getElementById('gGo');if(el)el.disabled=b;}
 function gApi(path,opt,token){
   opt=opt||{};opt.headers={'Authorization':'Bearer '+token,'Accept':'application/vnd.github+json','Content-Type':'application/json'};
   return fetch('https://api.github.com'+path,opt).then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error(j.message||('HTTP '+r.status));return j;});});
@@ -1347,16 +1314,16 @@ function mergeProg(local,cloud){
  local=local||{};cloud=cloud||{};
  return {marks:Object.assign({},cloud.marks||{},local.marks||{}),
   daily:Object.assign({},cloud.daily||{},local.daily||{}),
-  sched:Object.assign({},cloud.sched||{},local.sched||{}),
-  acct:local.acct||cloud.acct||''};
+  sched:Object.assign({},cloud.sched||{},local.sched||{})};
 }
 function progWeight(p){
  p=p||{};
  return Object.keys(p.marks||{}).length+Object.keys(p.daily||{}).length;
 }
 async function gateGh(){
+  if(!gMode)throw new Error('先选四级或六级');
   var token=document.getElementById('ghToken').value.trim();
-  if(!token)throw new Error('先贴上令牌');
+  if(!token)throw new Error('登录信息没有拿到，请重新点 GitHub 一键登录');
   var me=await gApi('/user',{token:token});
   var list=await gApi('/gists?per_page=100',{token:token});
   var FILE='cet-sprint.json';
@@ -1389,20 +1356,6 @@ async function gateGh(){
   if(!saved&&!hit)throw new Error('云端进度创建失败：'+(localStorage.getItem('sync_error')||'检查 GitHub 授权里的 gist 权限'));
   location.href='?level='+target;
 }
-async function gateSv(reg){
-  var payload={user:document.getElementById('gUser').value.trim(),password:document.getElementById('gPass').value,mode:gMode};
-  var r=await fetch(reg?'/api/register':'/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
-  var j=await r.json().catch(function(){return {error:'服务器不可用'};});
-  if(!r.ok)throw new Error(j.error||('HTTP '+r.status));
-  localStorage.removeItem('guest_mode');
-  localStorage.setItem('cet_token',j.token);localStorage.setItem('cet_user',j.user);localStorage.setItem('cet_level',j.mode||gMode);
-  var d=await fetch('/api/data',{headers:{Authorization:'Bearer '+j.token}}).then(function(x){return x.json();});
-  localStorage.setItem('cet6_progress_v1',JSON.stringify((d.data&&d.data.cet6)||{}));
-  localStorage.setItem('cet4_progress_v1',JSON.stringify((d.data&&d.data.cet4)||{}));
-  location.href='?level='+(j.mode||gMode);
-}
-async function gateGo(){gateMsg('');gateBusy(true);try{ if(gWhich==='gh')await gateGh();else await gateSv(false);}catch(e){gateMsg(e.message);gateBusy(false);}}
-async function gateReg(){gateMsg('');gateBusy(true);try{await gateSv(true);}catch(e){gateMsg(e.message);gateBusy(false);}}
 (async function(){
  var raw=location.hash.replace(/^#/,'');
  if(raw.indexOf('gh_token=')<0)return;
@@ -1422,17 +1375,16 @@ async function gateReg(){gateMsg('');gateBusy(true);try{await gateSv(true);}catc
  var tk=localStorage.getItem('gh_token');if(!tk)return;
  var lv=(location.search.match(/[?&]level=(cet4|cet6)/)||[])[1]||localStorage.getItem('cet_level')||'cet6';
  gMode=lv;
+ gateReady();
  document.getElementById('gate').classList.add('open');
  gateMsg('正在从云端同步进度…');gateBusy(true);
  document.getElementById('ghToken').value=tk;
  try{await gateGh();}catch(e){gateMsg('云端同步失败：'+e.message+'。可以点「游客进入」先用本机数据，或检查网络后重试。');gateBusy(false);}
 })();
 (function(){
- if(location.hostname.indexOf('github.io')>=0){var tb=document.querySelector('.g-tabs2');if(tb)tb.style.display='none';gWhich='gh';}
  gateLevelUI();
  var gh=localStorage.getItem('gh_token'),sv=localStorage.getItem('cet_token'),guest=localStorage.getItem('guest_mode')==='1';
  if(!gh&&!sv&&!guest){document.getElementById('gate').classList.add('open');return;}
- if(location.search.indexOf('level=')<0){location.href='?level='+(localStorage.getItem('cet_level')||'cet6');}
 })();
 </script>
 </body>
