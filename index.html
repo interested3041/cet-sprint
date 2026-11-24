@@ -244,7 +244,7 @@ input,textarea,button{font-family:inherit}
 
 <header>
   <div class="hbar">
-    <span class="logo">六级<b>冲刺</b>背诵</span>
+    <span class="logo">四六级<b>冲刺</b>背诵</span>
     <span class="count" id="countdown"></span>
     <div class="hbtns">
       <button class="hbtn" onclick="openProfile()" title="账号与模式" style="font-size:15px">👤</button>
@@ -1384,7 +1384,12 @@ async function gateGh(){
 (function(){
  gateLevelUI();
  var gh=localStorage.getItem('gh_token'),sv=localStorage.getItem('cet_token'),guest=localStorage.getItem('guest_mode')==='1';
- if(!gh&&!sv&&!guest){document.getElementById('gate').classList.add('open');return;}
+ if(!gh&&!sv&&!guest){
+   var logo=document.querySelector('.logo');
+   if(logo)logo.innerHTML=(gMode?(gMode==='cet4'?'四级':'六级'):'四六级')+'<b>冲刺</b>背诵';
+   var cd=document.getElementById('countdown');if(cd)cd.style.display='none';
+   document.getElementById('gate').classList.add('open');return;
+ }
 })();
 </script>
 </body>
