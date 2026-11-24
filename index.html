@@ -1197,7 +1197,7 @@ window.openSync=function(){
   var err=localStorage.getItem('sync_error')||'';
   var account=gh
     ? '<div class="sync-title">账号同步 <small>自动</small></div>'
-      +'<p class="sync-desc">已登录 '+esc(user||'GitHub')+'，每次标记自动同步；下面两个按钮只用于补一次。</p>'
+      +'<p class="sync-desc">已登录 '+esc(user||'GitHub')+' · 自动同步</p>'
       +'<div class="sync-actions"><button class="btn" onclick="syncUpload()">一键上传</button><button class="btn ghost" onclick="pullCloud()">一键导入</button></div>'
       +(err?'<div class="sync-toast sync-error">上次失败：'+esc(err)+'</div>':'')
     : '<div class="sync-title">账号同步</div>'
