@@ -1434,7 +1434,10 @@ function gateReady(){var ok=!!gMode;['gGuest','gCloud'].forEach(function(id){var
 function gateMsg(t){var el=document.getElementById('gMsg');if(el)el.textContent=t||'';}
 function gateBusy(b){var el=document.getElementById('gGo');if(el)el.disabled=b;}
 function gApi(path,opt,token){
-  opt=opt||{};opt.headers={'Authorization':'Bearer '+token,'Accept':'application/vnd.github+json','Content-Type':'application/json'};
+  opt=opt||{};
+  token=token||opt.token||'';
+  delete opt.token;
+  opt.headers={'Authorization':'Bearer '+token,'Accept':'application/vnd.github+json','Content-Type':'application/json'};
   return fetch('https://api.github.com'+path,opt).then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error(j.message||('HTTP '+r.status));return j;});});
 }
 function mergeProg(local,cloud){
