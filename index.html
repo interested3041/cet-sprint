@@ -402,7 +402,7 @@ window.switchGh=function(){
    cet4:JSON.parse(localStorage.getItem('cet4_progress_v1')||'{}')
   }));
  }catch(e){}
- ['gh_token','gh_gist_id','gh_user','gh_avatar','gh_scope','cet_user','sync_error','sync_last'].forEach(function(k){localStorage.removeItem(k);});
+ ['gh_token','gh_gist_id','gh_user','gh_avatar','gh_scope','cet_token','cet_user','sync_error','sync_last'].forEach(function(k){localStorage.removeItem(k);});
  localStorage.removeItem('cet_entered');
  localStorage.setItem('gh_switch','1');
  closeProfile();showGate();gateMsg('登录另一个 GitHub 账号');
