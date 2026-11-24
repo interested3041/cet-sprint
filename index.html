@@ -1240,17 +1240,16 @@ window.showSyncToast=function(t){
   el.className='sync-toast'+(String(t||'').indexOf('失败')>=0?' sync-error':'');
 };
 function copyText(t,cb){
-  var done=function(){if(cb)cb();};
-  if(navigator.clipboard&&navigator.clipboard.writeText){
-    navigator.clipboard.writeText(t).then(done).catch(function(){legacyCopy(t,done);});
-  }else legacyCopy(t,done);
-}
-function legacyCopy(t,cb){
-  var ta=document.createElement('textarea');ta.value=t;ta.style.position='fixed';ta.style.opacity='0';
-  document.body.appendChild(ta);ta.select();
-  var ok=false;try{ok=document.execCommand('copy');}catch(e){}
+  var ta=document.createElement('textarea');
+  ta.value=t;ta.style.position='fixed';ta.style.left='-9999px';ta.style.opacity='0';
+  document.body.appendChild(ta);
+  var ok=false;
+  try{ta.select();ok=document.execCommand('copy');}catch(e){}
   document.body.removeChild(ta);
-  if(ok&&cb)cb();else try{prompt('复制这条链接',t);}catch(e){}
+  if(ok){if(cb)cb();return;}
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(t).then(function(){if(cb)cb();}).catch(function(){try{prompt('复制这条链接',t);}catch(e){}});
+  }else try{prompt('复制这条链接',t);}catch(e){}
 }
 window.genLink=function(){
   var url=location.href.split('#')[0]+'#sync='+makeCode();
@@ -1261,20 +1260,10 @@ window.genLink=function(){
 window.shareLink=function(){
   var u=state.lastLink||location.href.split('#')[0]+'#sync='+makeCode();
   state.lastLink=u;
-  var settled=false;
-  function fallbackCopy(){
-    if(settled)return;settled=true;
-    copyText(u,function(){showSyncToast('已复制，发到微信即可');});
-  }
-  showSyncToast('正在打开分享…');
+  copyText(u,function(){showSyncToast('已复制，可粘贴到微信');});
   if(navigator.share){
-    setTimeout(fallbackCopy,1500);
-    try{
-      navigator.share({title:'四六级背诵进度',text:'打开这条链接就能接着背',url:u})
-        .then(function(){settled=true;showSyncToast('已调起分享');})
-        .catch(fallbackCopy);
-    }catch(e){fallbackCopy();}
-  }else fallbackCopy();
+    try{navigator.share({title:'四六级背诵进度',text:'打开这条链接就能接着背',url:u}).catch(function(){});}catch(e){}
+  }
 };
 window.importLink=function(){
   var str='';
