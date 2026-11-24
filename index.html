@@ -325,6 +325,8 @@ input,textarea,button{font-family:inherit}
   </div>
 </div>
 
+<div id="syncToast" class="sync-toast" role="status" aria-live="polite"></div>
+
 <footer>进度存本机 · 换设备用「☁ 同步」</footer>
 
 <script>
@@ -1248,7 +1250,7 @@ function tryApply(str,ask){
 }
 function authErrText(msg){return /bad credentials|401|unauthorized/i.test(String(msg||''));}
 function clearAuthState(){
- ['gh_token','gh_gist_id','cet_user','gh_scope'].forEach(function(k){localStorage.removeItem(k);});
+ ['gh_token','gh_gist_id','cet_token','cet_user','gh_user','gh_avatar','gh_scope'].forEach(function(k){localStorage.removeItem(k);});
  localStorage.setItem('sync_error','登录已失效，请重新登录');
 }
 window.relogin=function(){clearAuthState();closeSync();showGate();gateMsg('登录已失效，请重新登录');};
@@ -1281,7 +1283,7 @@ window.openSync=function(){
    +'<div class="sync-card"><div class="sync-title">文件备份</div>'
    +'<p class="sync-desc">留一份 JSON，换设备或以后导入。</p>'
    +'<div class="sync-actions"><button class="btn ghost" onclick="exportProg()">导出备份</button><button class="btn ghost" onclick="importClick()">导入备份</button></div></div>'
-   +'<div id="syncToast" class="sync-toast"></div></div>';
+   +'</div>';
   document.getElementById('syncBody').innerHTML=h;
   document.getElementById('syncModal').classList.add('open');
 };
@@ -1289,8 +1291,11 @@ window.closeSync=function(){document.getElementById('syncModal').classList.remov
 window.showSyncToast=function(t){
   var el=document.getElementById('syncToast');
   if(!el)return;
+  if(el._t)clearTimeout(el._t);
   el.textContent=t||'';
   el.className='sync-toast'+(String(t||'').indexOf('失败')>=0?' sync-error':'');
+  el.style.display='block';
+  el._t=setTimeout(function(){el.style.display='none';},String(t||'').indexOf('失败')>=0?4200:2600);
 };
 function copyText(t,cb){
   var ta=document.createElement('textarea');
