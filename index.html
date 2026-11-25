@@ -531,7 +531,40 @@ function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'
 
 /* ---------- 音频 ---------- */
 var audioNow=null;
+var WORD_AUDIO={};
 var SCROLL={};
+function ensureWordAudio(w){
+  if(!w)return null;
+  if(WORD_AUDIO[w])return WORD_AUDIO[w];
+  try{
+    var a=new Audio(ttsUrl('youdao',w));
+    a.preload='auto';
+    try{a.load();}catch(e){}
+    WORD_AUDIO[w]=a;
+    return a;
+  }catch(e){return null;}
+}
+function preloadWords(list){
+  (list||[]).forEach(function(it){
+    var w=it&&(it.w||it);
+    if(w)ensureWordAudio(w);
+  });
+}
+function preloadVisible(list){
+  preloadWords((list||[]).slice(0,10));
+  if(!('IntersectionObserver' in window)){preloadWords(list);return;}
+  var cards=document.querySelectorAll('#cards .card');
+  if(!cards.length)return;
+  var io=new IntersectionObserver(function(entries){
+    entries.forEach(function(en){
+      if(!en.isIntersecting)return;
+      var idx=[].indexOf.call(cards,en.target);
+      if(idx>=0&&list[idx])ensureWordAudio(list[idx].w);
+      io.unobserve(en.target);
+    });
+  },{rootMargin:'300px 0px'});
+  [].forEach.call(cards,function(c){io.observe(c);});
+}
 function stopAudio(){
   try{if(audioNow){audioNow.pause();audioNow=null;}}catch(e){}
   try{if('speechSynthesis' in window)window.speechSynthesis.cancel();}catch(e){}
@@ -563,7 +596,19 @@ function tryPlay(urls,text,rate){
   }
   next();
 }
-function speak(text){if(!text)return;tryPlay([ttsUrl('youdao',text),ttsUrl('baidu',text),ttsUrl('google',text)],text);}
+function speak(text){
+  if(!text)return;
+  var a=WORD_AUDIO[text];
+  if(a){
+    stopAudio();
+    audioNow=a;
+    try{a.currentTime=0;}catch(e){}
+    var p=a.play();
+    if(p&&p.catch)p.catch(function(){tryPlay([ttsUrl('youdao',text),ttsUrl('baidu',text),ttsUrl('google',text)],text);});
+    return;
+  }
+  tryPlay([ttsUrl('youdao',text),ttsUrl('baidu',text),ttsUrl('google',text)],text);
+}
 function speakSentence(text,rate){if(!text)return;tryPlay([ttsUrl('baidu',text),ttsUrl('google',text)],text,rate||1);}
 window.speak=speak;window.speakSentence=speakSentence;
 
@@ -700,6 +745,7 @@ function renderCards(){
   var fn={reading:cardReading,writing:cardWriting,translation:cardTrans,listening:cardListen}[state.cat];
   var h=arr.length?arr.map(fn).join(''):'<div class="empty">🎉 本类全部已掌握（或关闭“只看未掌握”查看全部）</div>';
   document.getElementById('cards').innerHTML=h;
+  preloadVisible(arr);
 }
 
 /* ---------- 默写批改 (LCS) ---------- */
@@ -1092,6 +1138,7 @@ function renderErrBook(){
     +'<div id="errBody">'+errBodyHtml(ws,qs,q)+'</div>'
     +'<div class="qactions"><button class="btn ghost" onclick="exportWrong()">⬇ 导出错词 txt</button></div></div>';
   document.getElementById('cards').innerHTML=h;
+  preloadWords(ws.map(function(x){return x.it;}));
 }
 window.errSearch=function(v){
   state.errQuery=v;
