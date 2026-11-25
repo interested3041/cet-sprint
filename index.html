@@ -532,6 +532,8 @@ function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'
 /* ---------- 音频 ---------- */
 var audioNow=null;
 var WORD_AUDIO={};
+var SENT_AUDIO={};
+var SENT_TRIM=0.8;
 var SCROLL={};
 function ensureWordAudio(w){
   if(!w)return null;
@@ -550,16 +552,60 @@ function preloadWords(list){
     if(w)ensureWordAudio(w);
   });
 }
+function ensureSentenceAudio(t){
+  if(!t)return null;
+  if(SENT_AUDIO[t])return SENT_AUDIO[t];
+  try{
+    var a=new Audio(ttsUrl('baidu',t));
+    a.preload='auto';
+    a.addEventListener('loadedmetadata',function(){try{a.currentTime=SENT_TRIM;}catch(e){}},{once:true});
+    try{a.load();}catch(e){}
+    SENT_AUDIO[t]=a;
+    return a;
+  }catch(e){return null;}
+}
+function preloadSentences(list){
+  (list||[]).forEach(function(it){
+    var t=it&&(it.en||it);
+    if(t)ensureSentenceAudio(t);
+  });
+}
+function playLoaded(a,rate,trim,text){
+  stopAudio();
+  audioNow=a;
+  try{a.playbackRate=rate&&rate!==1?rate:1;}catch(e){}
+  var started=false;
+  function go(){
+    if(started)return;started=true;
+    if(trim){try{a.currentTime=trim;}catch(e){}}
+    var p=a.play();
+    if(p&&p.catch)p.catch(function(){tryPlay([ttsUrl('baidu',text),ttsUrl('google',text)],text,rate);});
+  }
+  if(a.readyState>=1)go();
+  else{
+    a.addEventListener('loadedmetadata',go,{once:true});
+    try{a.load();}catch(e){}
+  }
+}
 function preloadVisible(list){
-  preloadWords((list||[]).slice(0,10));
-  if(!('IntersectionObserver' in window)){preloadWords(list);return;}
+  var first=(list||[]).slice(0,10);
+  preloadWords(first);
+  if(state.cat==='listening')preloadSentences(first);
+  if(!('IntersectionObserver' in window)){
+    preloadWords(list);
+    if(state.cat==='listening')preloadSentences(list);
+    return;
+  }
   var cards=document.querySelectorAll('#cards .card');
   if(!cards.length)return;
   var io=new IntersectionObserver(function(entries){
     entries.forEach(function(en){
       if(!en.isIntersecting)return;
       var idx=[].indexOf.call(cards,en.target);
-      if(idx>=0&&list[idx])ensureWordAudio(list[idx].w);
+      if(idx>=0&&list[idx]){
+        ensureWordAudio(list[idx].w);
+        if(state.cat==='listening'&&list[idx].en)ensureSentenceAudio(list[idx].en);
+      }
       io.unobserve(en.target);
     });
   },{rootMargin:'300px 0px'});
@@ -609,7 +655,12 @@ function speak(text){
   }
   tryPlay([ttsUrl('youdao',text),ttsUrl('baidu',text),ttsUrl('google',text)],text);
 }
-function speakSentence(text,rate){if(!text)return;tryPlay([ttsUrl('baidu',text),ttsUrl('google',text)],text,rate||1);}
+function speakSentence(text,rate){
+  if(!text)return;
+  var a=SENT_AUDIO[text]||ensureSentenceAudio(text);
+  if(a){playLoaded(a,rate||1,SENT_TRIM,text);return;}
+  tryPlay([ttsUrl('baidu',text),ttsUrl('google',text)],text,rate||1);
+}
 window.speak=speak;window.speakSentence=speakSentence;
 
 /* ---------- 倒计时 & 天数 ---------- */
@@ -975,6 +1026,7 @@ function renderQuiz(){
   else h+='<button class="btn" onclick="submitQuiz('+q.day+')">提交并判分</button>';
   h+='</div></div>';
   el.innerHTML=h;
+  if(q.listening&&q.listening.story)ensureSentenceAudio(q.listening.story);
 }
 
 window.pickOpt=function(day,kind,qi,oi){var a=dayRec(day);if(!a[kind])a[kind]=[];a[kind][qi]=oi;save();};
