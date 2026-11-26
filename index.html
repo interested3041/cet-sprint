@@ -71,6 +71,30 @@ header{position:static;background:transparent;border-bottom:1px solid var(--line
 .sent{margin-top:8px;padding:8px 10px;background:#f8fafc;border-radius:8px;font-size:14px}
 .sent .en{font-weight:600}
 .sent .cn{color:var(--sub);font-size:12.5px;margin-top:2px}
+.sent-w{cursor:pointer;border-radius:4px;padding:0 1px;transition:.12s;border-bottom:1px dashed transparent}
+.sent-w:hover{background:#e8eeff;border-bottom-color:var(--brand)}
+.sent-w.vocab-hit{background:#fde68a;color:#78350f;font-weight:800;border-bottom-color:#d97706;padding:0 2px}
+.vocab-card .vsrc{margin-top:7px;padding:8px 10px;background:#f8fafc;border-left:3px solid #f59e0b;border-radius:7px;font-size:13px;line-height:1.75}
+.vocab-card .vsrc .lab{display:block;font-size:10px;font-weight:800;color:#b45309;margin-bottom:2px;letter-spacing:.06em}
+.vocab-card .vsrc-cn{color:var(--sub);font-size:12.5px;margin-top:2px}
+.vocab-card .vmeta{font-size:11px;color:var(--sub);margin-top:4px}
+.ws{position:fixed;inset:0;z-index:90;display:none;align-items:flex-end;justify-content:center;background:rgba(15,23,42,.45);padding:0}
+.ws.open{display:flex}
+.ws-card{width:min(560px,100%);max-height:86vh;overflow:auto;background:var(--card);color:var(--ink);border-radius:18px 18px 0 0;padding:18px 18px calc(18px + env(safe-area-inset-bottom));box-shadow:0 -12px 40px rgba(15,23,42,.25)}
+.ws-top{display:flex;align-items:flex-start;gap:8px}
+.ws-word{font-size:24px;font-weight:800;line-height:1.2;word-break:break-word}
+.ws-ph{color:var(--sub);font-size:13px;margin:3px 0 0}
+.ws-close{margin-left:auto;border:1px solid var(--line);background:transparent;color:var(--sub);border-radius:50%;width:32px;height:32px;font-size:16px;cursor:pointer;flex:0 0 auto}
+.ws-mean{margin-top:12px;font-size:15px;line-height:1.7;font-weight:600}
+.ws-lab{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.06em;color:#fff;background:var(--brand);border-radius:4px;padding:2px 6px;margin-right:6px;vertical-align:1px}
+.ws-sent{margin-top:10px;padding:9px 10px;background:#f8fafc;border-radius:8px;font-size:13.5px;line-height:1.75}
+.ws-sent-cn{color:var(--sub);font-size:12.5px;margin-top:3px}
+.ws-src{font-size:10.5px;color:var(--sub);margin-top:6px}
+.ws-ai{margin-top:10px;padding:10px 11px;background:#f5f3ff;border-left:3px solid #7c3aed;border-radius:8px;font-size:13px;line-height:1.7;color:#4c1d95}
+.ws-ai b{display:block;font-size:11px;letter-spacing:.05em;margin-bottom:3px}
+.ws-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;align-items:center}
+.ws-actions .btn{flex:1 1 auto}
+@media(min-width:720px){.ws{align-items:center;padding:20px}.ws-card{border-radius:16px;max-height:80vh}}
 .note{font-size:12.5px;color:var(--warn);margin-top:6px;background:#fffbeb;padding:6px 9px;border-radius:7px}
 .hidebox{margin-top:8px}
 .revealbtn{border:1px dashed var(--brand);background:transparent;color:var(--brand);font-size:12px;padding:5px 12px;border-radius:8px;cursor:pointer;font-weight:600}
@@ -138,6 +162,7 @@ header{position:static;background:transparent;border-bottom:1px solid var(--line
 .qbanner .btn.ghost{background:transparent;border-color:rgba(255,255,255,.5)}
 .qbanner b{font-size:14px}
 .tab[data-c=quiz].active{background:#0f766e}
+.tab[data-c=vocab].active{background:#7c3aed}
 .tab[data-c=errbook].active{background:#b91c1c}
 .quizbox{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;box-shadow:var(--shadow)}
 .qhead{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12.5px;color:var(--sub);margin-bottom:10px}
@@ -185,6 +210,12 @@ header{position:static;background:transparent;border-bottom:1px solid var(--line
 body.dark{--bg:#0f141b;--card:#161c25;--ink:#e6eaf2;--sub:#96a0ae;--line:#26303c;--chip:#1d2735;--shadow:0 1px 2px rgba(0,0,0,.35),0 8px 24px rgba(0,0,0,.25)}
 body.dark header{background:rgba(15,20,27,.92)}
 body.dark .sent,body.dark .qpassage,body.dark .qref,body.dark .opt,body.dark .task .model,body.dark .model{background:#1b2430}
+body.dark .sent-w:hover{background:#24324a}
+body.dark .sent-w.vocab-hit{background:#92400e;color:#fef3c7;border-bottom-color:#fbbf24}
+body.dark .vocab-card .vsrc{background:#1b2430;border-left-color:#d97706}
+body.dark .vocab-card .vsrc .lab{color:#fbbf24}
+body.dark .ws-sent{background:#1b2430}
+body.dark .ws-ai{background:#241a33;color:#ddd6fe}
 body.dark .qblock{background:#141a22}
 body.dark .qstory{background:#2a1d12;color:#f3d9c0}
 body.dark .qwhy,body.dark .note{background:#2a2115;color:#f2c37a}
@@ -320,6 +351,23 @@ input,textarea,button{font-family:inherit}
       <h2>导入进度</h2>
       <textarea id="linkInput" class="link-input" rows="2" autocomplete="off" autocapitalize="off" spellcheck="false" inputmode="url" placeholder="粘贴同步链接或同步码"></textarea>
       <div class="sync-actions"><button class="btn ghost" onclick="pasteLinkInput()">粘贴</button><button class="btn" onclick="applyLinkInput()">导入</button><button class="btn ghost" onclick="closeLinkImport()">取消</button></div>
+    </div>
+  </div>
+</div>
+
+<div class="ws" id="wordSheet" onclick="if(event.target===this)closeWordSheet()">
+  <div class="ws-card">
+    <div class="ws-top">
+      <div><div class="ws-word" id="wsWord"></div><div class="ws-ph" id="wsPh"></div></div>
+      <button class="ws-close" onclick="closeWordSheet()" title="关闭">✕</button>
+    </div>
+    <div class="ws-mean" id="wsMean"></div>
+    <div class="ws-sent" id="wsSent"></div>
+    <div class="ws-ai" id="wsAI" style="display:none"></div>
+    <div class="ws-actions">
+      <button class="btn" id="wsAddBtn" onclick="addSheetVocab()">＋ 加入生词本</button>
+      <button class="btn ghost" id="wsAIRun" onclick="runSheetAI()" style="display:none">AI 语境解释</button>
+      <button class="btn ghost" onclick="closeWordSheet()">关闭</button>
     </div>
   </div>
 </div>
@@ -475,10 +523,10 @@ var CATS=[
   {k:'listening',n:'听力',c:10,color:'var(--listen)'}
 ].filter(function(c){return DAYS.some(function(d){return d[c.k]&&d[c.k].length;});});
 var STORE=(LV==='cet4'?'cet4_progress_v1':'cet6_progress_v1');
-var state={day:0,cat:'reading',test:false,shuffle:false,unknown:false,marks:{},revealed:{},daily:{},sched:{},bannerOff:'',errFilter:'all',errQuery:''};
+var state={day:0,cat:'reading',test:false,shuffle:false,unknown:false,marks:{},revealed:{},daily:{},sched:{},vocab:{},bannerOff:'',errFilter:'all',errQuery:''};
 
-function load(){try{var s=JSON.parse(localStorage.getItem(STORE));if(s&&s.marks)state.marks=s.marks;if(s&&s.daily)state.daily=s.daily;if(s&&s.sched)state.sched=s.sched;state.bannerOff=localStorage.getItem('cet6_banner_v1')||'';}catch(e){}}
-function payload(){return {marks:state.marks,daily:state.daily,sched:state.sched};}
+function load(){try{var s=JSON.parse(localStorage.getItem(STORE));if(s&&s.marks)state.marks=s.marks;if(s&&s.daily)state.daily=s.daily;if(s&&s.sched)state.sched=s.sched;if(s&&s.vocab)state.vocab=s.vocab;state.bannerOff=localStorage.getItem('cet6_banner_v1')||'';}catch(e){}}
+function payload(){return {marks:state.marks,daily:state.daily,sched:state.sched,vocab:state.vocab};}
 window.CET_PAYLOAD=payload;window.CET_LV=LV;
 function save(){try{localStorage.setItem(STORE,JSON.stringify(payload()));}catch(e){}}
 var REV=[1,2,4,7,15];
@@ -667,6 +715,7 @@ function renderTabs(){
   if(dailyArr().length)h+='<div class="tab'+(state.cat==='quiz'?' active':'')+'" data-c="quiz" onclick="goCat(\'quiz\')">小测<small>每日1套</small></div>';
   else if(state.cat==='quiz')state.cat='reading';
   h+='<div class="tab'+(state.cat==='errbook'?' active':'')+'" data-c="errbook" onclick="goCat(\'errbook\')">错词<small>自动收集</small></div>';
+  h+='<div class="tab'+(state.cat==='vocab'?' active':'')+'" data-c="vocab" onclick="goCat(\'vocab\')">生词本<small>'+vocabCount()+'词</small></div>';
   document.getElementById('tabs').innerHTML=h;
 }
 window.goCat=function(c){if(c===state.cat)return;SCROLL[state.day+':'+state.cat]=window.scrollY||0;state.cat=c;state.revealed={};renderTabs();renderTip();renderCards();renderTask();updateProg();window.scrollTo(0,SCROLL[state.day+':'+c]||0);};
@@ -683,6 +732,10 @@ function renderTip(){
   }
   if(state.cat==='errbook'){
     document.getElementById('tip').innerHTML='<b>错词本</b> 点 ✗ 的词、小测错题都会自动进来；按 1/2/4/7/15 天间隔排期：记住了推到下一轮，还是不会就重置到第 1 轮。每天只做「今天该复习」那一批，过完就算清零。';
+    return;
+  }
+  if(state.cat==='vocab'){
+    document.getElementById('tip').innerHTML='<b>生词本</b> 在听力、写作、翻译的例句里点任意单词，就能看词义和整句中文，并可加入这里。加入的词在所有例句里会自动高亮；每个词保留当时所在的例句。';
     return;
   }
   var tip=META.tips[state.cat]||'';
@@ -708,6 +761,178 @@ function revealBtn(id){return '<div class="hidebox" id="hb_'+id+'"><button class
 window.reveal=function(id){state.revealed[id]=true;var hb=document.getElementById('hb_'+id);var ans=document.getElementById('ans_'+id);if(hb)hb.classList.add('hidden');if(ans)ans.classList.remove('hidden');};
 function spkBtn(text){return '<button class="spk" onclick="speak(\''+esc(text).replace(/'/g,"\\'")+'\')" title="播放">🔊</button>';}
 
+/* ---------- 例句点词 / 生词本 ---------- */
+var AI_BASE='https://cet-sprint-auth.cet-sprint.workers.dev';
+var AI_READY=false;
+var AI_CACHE={};
+var WORD_SHEET=null;
+function normWord(w){return String(w==null?'':w).toLowerCase().replace(/[^a-z0-9'-]/g,'');}
+function wordVariants(word){
+  var w=normWord(word),out=[w];
+  if(!w)return out;
+  function add(x){if(x&&x.length>1&&out.indexOf(x)<0)out.push(x);}
+  if(/ies$/.test(w))add(w.slice(0,-3)+'y');
+  if(/es$/.test(w))add(w.slice(0,-2));
+  if(/s$/.test(w)&&!/ss$/.test(w))add(w.slice(0,-1));
+  if(/ing$/.test(w)){add(w.slice(0,-3));add(w.slice(0,-3)+'e');}
+  if(/ed$/.test(w)){add(w.slice(0,-2));add(w.slice(0,-1));}
+  if(/ation$/.test(w))add(w.slice(0,-5));
+  if(/tion$/.test(w))add(w.slice(0,-4));
+  if(/ment$/.test(w))add(w.slice(0,-4));
+  if(/ness$/.test(w))add(w.slice(0,-4));
+  if(/ly$/.test(w))add(w.slice(0,-2));
+  return out;
+}
+function scanWordDays(days,word){
+  var variants=wordVariants(word),cats=['reading','writing','translation','listening'];
+  for(var di=0;di<(days||[]).length;di++){
+    var d=days[di];
+    for(var ci=0;ci<cats.length;ci++){
+      var list=d[cats[ci]]||[];
+      for(var ii=0;ii<list.length;ii++){
+        var it=list[ii];
+        if(variants.indexOf(normWord(it.w))>=0)return {w:it.w,ph:it.ph||'',m:it.m||'',cat:cats[ci],day:d.day};
+      }
+    }
+  }
+  return null;
+}
+function findDict(word){
+  var hit=scanWordDays(DAYS,word);
+  if(hit)return hit;
+  try{if(window.CET6_DATA)hit=scanWordDays(window.CET6_DATA.days,word);if(hit)return hit;}catch(e){}
+  try{if(window.CET4_DATA)hit=scanWordDays(window.CET4_DATA.days,word);}catch(e){}
+  return hit;
+}
+var ONLINE_CACHE={};
+function onlineTranslate(text,cb){
+  text=String(text||'').trim();if(!text){cb('');return;}
+  if(ONLINE_CACHE[text]){cb(ONLINE_CACHE[text]);return;}
+  var u='https://api.mymemory.translated.net/get?q='+encodeURIComponent(text.slice(0,420))+'&langpair=en|zh-CN';
+  fetch(u).then(function(r){return r.json();}).then(function(j){
+    var t=String(j&&j.responseData&&j.responseData.translatedText||'').trim();
+    if(t&&!/MYMEMORY WARNING|QUERY LENGTH LIMIT/i.test(t)){ONLINE_CACHE[text]=t;cb(t);}else cb('');
+  }).catch(function(){cb('');});
+}
+function sentChips(text,cn,source){
+  var raw=String(text==null?'':text);
+  return raw.split(/([A-Za-z][A-Za-z'-]*)/).map(function(part){
+    if(!/^[A-Za-z]/.test(part))return esc(part);
+    var hit=vocabKeyFor(part);
+    return '<span class="sent-w'+(hit?' vocab-hit':'')+'" data-w="'+esc(part)+'" data-s="'+esc(raw)+'" data-cn="'+esc(cn||'')+'" data-src="'+esc(source||'')+'">'+esc(part)+'</span>';
+  }).join('');
+}
+function vocabList(){
+  return Object.keys(state.vocab||{}).map(function(k){return state.vocab[k];}).filter(function(x){return x;}).sort(function(a,b){return (b.added||0)-(a.added||0);});
+}
+function vocabCount(){return Object.keys(state.vocab||{}).length;}
+function vocabKeyFor(word){
+  var low=normWord(word);
+  if(state.vocab&&state.vocab[low])return low;
+  if(low.length<3)return '';
+  var vs=wordVariants(word);
+  for(var i=0;i<vs.length;i++){if(state.vocab&&state.vocab[vs[i]])return vs[i];}
+  return '';
+}
+function updateSheetAdd(){
+  var b=document.getElementById('wsAddBtn');if(!b||!WORD_SHEET)return;
+  var has=!!vocabKeyFor(WORD_SHEET.w);
+  b.textContent=has?'✓ 已在生词本':'＋ 加入生词本';
+  b.disabled=has;
+}
+function closeWordSheet(){var el=document.getElementById('wordSheet');if(el)el.classList.remove('open');}
+window.closeWordSheet=closeWordSheet;
+function openWordSheet(w,sentence,cn,source){
+  w=String(w||'').replace(/^\s+|\s+$/g,'');
+  if(!w)return;
+  var info=findDict(w),low=normWord(w);
+  WORD_SHEET={w:info?info.w:w,low:low,ph:(info&&info.ph)||'',m:(info&&info.m)||'',sentence:String(sentence||''),cn:String(cn||''),source:String(source||''),cat:(info&&info.cat)||''};
+  document.getElementById('wsWord').textContent=WORD_SHEET.w;
+  document.getElementById('wsPh').textContent=WORD_SHEET.ph?'/'+WORD_SHEET.ph+'/':'';
+  var meanEl=document.getElementById('wsMean');
+  if(WORD_SHEET.m)meanEl.innerHTML='<span class="ws-lab">词义</span>'+esc(WORD_SHEET.m);
+  else{
+    meanEl.innerHTML='<span class="ws-lab">词义</span><span style="color:var(--sub);font-weight:400">本地词库未收录，正在查在线词义…</span>';
+    onlineTranslate(w,function(t){
+      if(!WORD_SHEET||WORD_SHEET.low!==low||!t)return;
+      meanEl.innerHTML='<span class="ws-lab">在线词义</span>'+esc(t)+'<div style="color:var(--sub);font-size:11px;font-weight:400;margin-top:3px">在线字典释义，不是语境解释；整句中文见下方。</div>';
+    });
+  }
+  document.getElementById('wsSent').innerHTML='<span class="ws-lab">例句</span>'+sentChips(WORD_SHEET.sentence,WORD_SHEET.cn,WORD_SHEET.source)
+    +(WORD_SHEET.cn?'<div class="ws-sent-cn">'+esc(WORD_SHEET.cn)+'</div>':'')
+    +(WORD_SHEET.source?'<div class="ws-src">来源 · '+esc(WORD_SHEET.source)+'</div>':'');
+  if(!WORD_SHEET.cn&&WORD_SHEET.sentence){
+    onlineTranslate(WORD_SHEET.sentence,function(t){
+      if(!WORD_SHEET||WORD_SHEET.low!==low||!t)return;
+      var sentEl=document.getElementById('wsSent');
+      if(sentEl)sentEl.innerHTML+='<div class="ws-sent-cn">在线整句：'+esc(t)+'</div>';
+    });
+  }
+  var ai=document.getElementById('wsAI');ai.style.display='none';ai.innerHTML='';
+  var aiBtn=document.getElementById('wsAIRun');aiBtn.style.display=AI_READY?'':'none';
+  updateSheetAdd();
+  document.getElementById('wordSheet').classList.add('open');
+}
+window.openWordSheet=openWordSheet;
+window.addSheetVocab=function(){
+  var d=WORD_SHEET;if(!d)return;
+  if(vocabKeyFor(d.w))return;
+  state.vocab[d.low]={k:d.low,w:d.w,ph:d.ph,m:d.m,src:d.sentence,srcCn:d.cn,srcLabel:d.source,added:Date.now()};
+  save();renderTabs();renderCards();updateProg();updateSheetAdd();
+  if(window.showSyncToast)showSyncToast('已加入生词本');
+};
+window.removeVocab=function(k){
+  delete state.vocab[k];save();renderTabs();renderCards();updateProg();
+  if(window.showSyncToast)showSyncToast('已从生词本移除');
+};
+function renderVocab(){
+  var list=vocabList(),el=document.getElementById('cards'),h='';
+  if(!list.length){
+    el.innerHTML='<div class="empty">还没有生词。<br>去「听力」例句里点任意单词，查看例句中的意思，再点「＋ 加入生词本」。</div>';
+    return;
+  }
+  list.forEach(function(v){
+    h+='<div class="card vocab-card"><div class="wline"><span class="word">'+esc(v.w)+'</span>'+spkBtn(v.w)
+      +(v.ph?'<span class="ph">/'+esc(v.ph)+'/</span>':'')
+      +'<button class="mk" style="margin-left:auto" onclick="removeVocab(\''+(v.k||normWord(v.w)).replace(/'/g,"\\'")+'\')">移除</button></div>'
+      +'<div class="mean">'+esc(v.m||'词库未收录')+'</div>'
+      +'<div class="vsrc"><span class="lab">来源例句</span>'+sentChips(v.src||'',v.srcCn||'',v.srcLabel||'')
+      +(v.srcCn?'<div class="vsrc-cn">'+esc(v.srcCn)+'</div>':'')
+      +(v.srcLabel?'<div class="vmeta">'+esc(v.srcLabel)+'</div>':'')+'</div></div>';
+  });
+  el.innerHTML=h;
+}
+function runSheetAI(){
+  var d=WORD_SHEET;if(!d)return;
+  var box=document.getElementById('wsAI');box.style.display='block';
+  if(!AI_READY){box.innerHTML='<b>AI 语境解释</b>AI 还没配置。先用上面的词义和例句中文。';return;}
+  var key=d.low+'|'+d.sentence;
+  if(AI_CACHE[key]){box.innerHTML='<b>AI 语境解释</b>'+esc(AI_CACHE[key].meaning||'')+(AI_CACHE[key].why?'<div style="margin-top:4px;opacity:.85">'+esc(AI_CACHE[key].why)+'</div>':'');return;}
+  box.innerHTML='<b>AI 语境解释</b>正在结合例句看上下文…';
+  fetch(AI_BASE+'/define',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({word:d.w,sentence:d.sentence,cn:d.cn})})
+    .then(function(r){return r.json();})
+    .then(function(j){
+      if(!j||!j.ok)throw new Error((j&&j.error)||'AI 暂不可用');
+      AI_CACHE[key]={meaning:j.meaning||'',why:j.why||''};
+      box.innerHTML='<b>AI 语境解释</b>'+esc(j.meaning||'')+(j.why?'<div style="margin-top:4px;opacity:.85">'+esc(j.why)+'</div>':'');
+    })
+    .catch(function(e){box.innerHTML='<b>AI 语境解释</b>暂时用不了：'+esc(String(e.message||e).slice(0,80))+'。先用上面的词义和例句中文。';});
+}
+window.runSheetAI=runSheetAI;
+function checkAI(){
+  fetch(AI_BASE+'/health',{cache:'no-store'}).then(function(r){return r.json();}).then(function(j){
+    AI_READY=!!(j&&j.ai);
+    var aiBtn=document.getElementById('wsAIRun');if(aiBtn&&document.getElementById('wordSheet').classList.contains('open'))aiBtn.style.display=AI_READY?'':'none';
+  }).catch(function(){});
+}
+document.addEventListener('click',function(e){
+  var t=e.target&&e.target.closest?e.target.closest('.sent-w'):null;
+  if(!t)return;
+  e.preventDefault();
+  openWordSheet(t.getAttribute('data-w'),t.getAttribute('data-s'),t.getAttribute('data-cn'),t.getAttribute('data-src'));
+});
+
+
 function cardReading(it,idx){
   var k=key('reading',it.w),m=state.marks[k];
   var cls='card'+(m===1?' known':m===0?' unknown':'');
@@ -722,7 +947,7 @@ function cardWriting(it,idx){
   var cls='card'+(m===1?' known':m===0?' unknown':'');
   var rev=it.rev?'<span class="revbadge">复·D'+it.from+'</span>':'';
   var id='w'+idx;
-  var sent='<div class="sent"><div class="en">'+esc(it.en)+'</div><div class="cn">'+esc(it.cn)+'</div></div>';
+  var sent='<div class="sent"><div class="en">'+sentChips(it.en,it.cn,'D'+DAYS[state.day].day+' 写作')+'</div><div class="cn">'+esc(it.cn)+'</div></div>';
   var sentBlock=state.test&&!state.revealed[id]?revealBtn(id)+'<div class="hidden" id="ans_'+id+'">'+sent+'</div>':sent;
   var dict='<div class="dict"><button class="btn ghost" onclick="toggleDict(\'wd'+idx+'\')">✍ 默写此句</button><div id="wd'+idx+'" class="hidden" style="margin-top:6px"><textarea id="ta_wd'+idx+'" placeholder="看中文，默写英文句子…"></textarea><div class="row"><button class="btn" onclick="checkDict(\'wd'+idx+'\',\''+esc(it.en).replace(/'/g,"\\'")+'\')">对照批改</button><span class="score" id="sc_wd'+idx+'"></span></div><div class="diff" id="df_wd'+idx+'"></div></div></div>';
   return '<div class="'+cls+'"><div class="wline"><span class="word">'+esc(it.w)+'</span>'+spkBtn(it.w)+'<span class="ph">/'+esc(it.ph)+'/</span>'+rev+'</div><div class="mean">'+esc(it.m)+'</div>'+sentBlock+dict+markBtns('writing',it.w)+'</div>';
@@ -733,7 +958,7 @@ function cardTrans(it,idx){
   var rev=it.rev?'<span class="revbadge">复·D'+it.from+'</span>':'';
   var id='t'+idx;
   var ph=it.ph?'<span class="ph">/'+esc(it.ph)+'/</span>':'';
-  var ans='<div class="sent"><div class="en">'+esc(it.en)+'</div></div><div class="note">💡 '+esc(it.note)+'</div>';
+  var ans='<div class="sent"><div class="en">'+sentChips(it.en,it.cn,'D'+DAYS[state.day].day+' 翻译')+'</div></div><div class="note">💡 '+esc(it.note)+'</div>';
   var ansBlock=state.test&&!state.revealed[id]?revealBtn(id)+'<div class="hidden" id="ans_'+id+'">'+ans+'</div>':ans;
   return '<div class="'+cls+'"><div class="wline"><span class="word">'+esc(it.w)+'</span>'+spkBtn(it.w)+ph+rev+'</div><div class="mean">'+esc(it.m)+'</div><div class="sent"><div class="cn" style="font-size:14px;color:var(--ink)">'+esc(it.cn)+'</div></div>'+ansBlock+markBtns('translation',it.w)+'</div>';
 }
@@ -742,7 +967,7 @@ function cardListen(it,idx){
   var cls='card'+(m===1?' known':m===0?' unknown':'');
   var rev=it.rev?'<span class="revbadge">复·D'+it.from+'</span>':'';
   var id='l'+idx;
-  var sent='<div class="sent"><div class="en">'+esc(it.en)+'</div><div class="cn">'+esc(it.cn)+'</div></div>';
+  var sent='<div class="sent"><div class="en">'+sentChips(it.en,it.cn,'D'+DAYS[state.day].day+' 听力')+'</div><div class="cn">'+esc(it.cn)+'</div></div>';
   var sentBlock=state.test&&!state.revealed[id]?revealBtn(id)+'<div class="hidden" id="ans_'+id+'">'+sent+'</div>':sent;
   var ens=esc(it.en).replace(/'/g,"\\'");
   var playSent='<div class="qplay" style="margin-top:8px">'
@@ -754,6 +979,7 @@ function cardListen(it,idx){
 function renderCards(){
   if(state.cat==='quiz'){renderQuiz();return;}
   if(state.cat==='errbook'){renderErrBook();return;}
+  if(state.cat==='vocab'){renderVocab();return;}
   var d=DAYS[state.day],arr=shuffled(d[state.cat]);
   if(state.unknown)arr=arr.filter(function(it){return state.marks[key(state.cat,it.w)]!==1;});
   var fn={reading:cardReading,writing:cardWriting,translation:cardTrans,listening:cardListen}[state.cat];
@@ -795,7 +1021,7 @@ function highlight(en,words){
   return s;
 }
 function renderTask(){
-  if(state.cat==='quiz'||state.cat==='errbook'){document.getElementById('task').innerHTML='';return;}
+  if(state.cat==='quiz'||state.cat==='errbook'||state.cat==='vocab'){document.getElementById('task').innerHTML='';return;}
   var d=DAYS[state.day],t=d.task;
   if(!t){document.getElementById('task').innerHTML='';return;}
   var model='';
@@ -952,7 +1178,7 @@ function renderQuiz(){
     +'<div class="qplay"><button class="btn" onclick="playStory('+q.day+',1)">▶ 播放短文</button>'
     +'<button class="btn ghost" onclick="playStory('+q.day+',0.72)">▶ 慢速</button>'
     +'<button class="btn ghost" onclick="toggleScript('+q.day+')">听不到？看原文</button></div>'
-    +'<div class="qstory hidden" id="script_'+q.day+'">'+esc(q.listening.story)+'</div>';
+    +'<div class="qstory hidden" id="script_'+q.day+'">'+sentChips(q.listening.story,'','D'+q.day+' 小测听力')+'</div>';
   q.listening.q.forEach(function(it,i){
     h+='<div class="qitem"><div class="qn">Q'+(i+1)+'. '+esc(it.q)+'</div>';
     it.o.forEach(function(o,oi){h+=optHtml(q.day,'l',i,oi,letter(oi)+'. '+esc(o),a.l?a.l[i]:null,sub,it.a);});
@@ -962,7 +1188,7 @@ function renderQuiz(){
   h+='</div>';
 
   h+='<div class="qblock"><div class="qh"><span class="qtag r">阅读</span>'+esc(q.reading.title)+'</div>'
-    +'<div class="qpassage">'+esc(q.reading.passage)+'</div>';
+    +'<div class="qpassage">'+sentChips(q.reading.passage,'','D'+q.day+' 小测阅读')+'</div>';
   q.reading.q.forEach(function(it,i){
     h+='<div class="qitem"><div class="qn">Q'+(i+1)+'. '+esc(it.q)+'</div>';
     it.o.forEach(function(o,oi){h+=optHtml(q.day,'r',i,oi,letter(oi)+'. '+esc(o),a.r?a.r[i]:null,sub,it.a);});
@@ -1204,6 +1430,10 @@ function updateProg(){
     document.getElementById('prog').innerHTML='错词 <b>'+wrongWords().length+'</b> 个待攻克';
     return;
   }
+  if(state.cat==='vocab'){
+    document.getElementById('prog').innerHTML='生词 <b>'+vocabCount()+'</b> 个已收录';
+    return;
+  }
   var d=DAYS[state.day],arr=d[state.cat];
   var known=arr.filter(function(it){return state.marks[key(state.cat,it.w)]===1;}).length;
   document.getElementById('prog').innerHTML='本类掌握 <b>'+known+'</b>/'+arr.length;
@@ -1216,7 +1446,7 @@ window.setUnknown=function(v){state.unknown=v;renderCards();updateProg();};
 
 /* ---------- 导出/导入 ---------- */
 window.exportProg=function(){
-  var blob=new Blob([JSON.stringify({marks:state.marks,daily:state.daily,sched:state.sched,exported:new Date().toISOString()},null,2)],{type:'application/json'});
+  var blob=new Blob([JSON.stringify({marks:state.marks,daily:state.daily,sched:state.sched,vocab:state.vocab,exported:new Date().toISOString()},null,2)],{type:'application/json'});
   var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=META.level+'背诵进度_'+todayStr()+'.json';a.click();
   setTimeout(function(){URL.revokeObjectURL(a.href);},1000);
 };
@@ -1225,10 +1455,11 @@ window.importProg=function(inp){
   var f=inp.files[0];if(!f)return;
   var r=new FileReader();
   r.onload=function(){
-    try{var o=JSON.parse(r.result);if(o.marks||o.daily){
+    try{var o=JSON.parse(r.result);if(o.marks||o.daily||o.vocab){
       var n=0;if(o.marks){for(var k in o.marks){state.marks[k]=o.marks[k];n++;}}
       var m=0;if(o.daily){for(var d in o.daily){state.daily[d]=o.daily[d];m++;}}if(o.sched){for(var sk in o.sched)state.sched[sk]=o.sched[sk];}
-      save();renderCards();updateProg();renderBanner();showSyncToast('已导入 '+n+' 词、'+m+' 天小测');
+      if(o.vocab){for(var vk in o.vocab)state.vocab[vk]=o.vocab[vk];}
+      save();renderTabs();renderCards();updateProg();renderBanner();showSyncToast('已导入 '+n+' 词、'+m+' 天小测');
     }else showSyncToast('文件格式不对');}
     catch(e){showSyncToast('导入失败：'+e.message);}
     inp.value='';
@@ -1468,6 +1699,7 @@ checkHash();
 state.day=pickToday();
 initCountdown();
 initDark();
+checkAI();
 renderDays();renderTabs();renderTip();renderCards();renderTask();updateProg();renderBanner();
 })();
 </script>
