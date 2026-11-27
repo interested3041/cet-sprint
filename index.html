@@ -783,7 +783,7 @@ function spkBtn(text){return '<button class="spk" onclick="speak(\''+esc(text).r
 /* ---------- 例句点词 / 生词本 ---------- */
 var AI_BASE='https://cet-sprint-auth.cet-sprint.workers.dev';
 var AI_DIRECT_DEFAULT='https://ws-0ha4etpemr33xny3.cn-beijing.maas.aliyuncs.com/compatible-mode/v1';
-var AI_MODEL='qwen-flash';
+var AI_MODEL='qwen3.7-flash';
 var AI_DIRECT_ROOT='';
 var AI_DIRECT_KEY='';
 try{
@@ -870,7 +870,7 @@ function aiPrompt(d){
 function aiDirectRequest(d){
   var root=String(AI_DIRECT_ROOT||AI_DIRECT_DEFAULT).replace(/\/+$/,'');
   var url=/\/chat\/completions$/.test(root)?root:root+'/chat/completions';
-  var body={model:AI_MODEL,temperature:0.2,max_tokens:280,messages:aiPrompt(d)};
+  var body={model:AI_MODEL,temperature:0.2,max_tokens:280,enable_thinking:false,messages:aiPrompt(d)};
   return fetch(url,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+AI_DIRECT_KEY},body:JSON.stringify(body)})
     .then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error((j&&j.error&&(j.error.message||j.error.code))||('AI HTTP '+r.status));return j;});})
     .then(function(j){return aiParse(j&&j.choices&&j.choices[0]&&j.choices[0].message&&j.choices[0].message.content);});
