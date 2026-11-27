@@ -140,8 +140,11 @@ header{position:static;background:transparent;border-bottom:1px solid var(--line
 .account-line b{color:var(--ink)}
 .link-input{width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:10px;padding:11px 12px;font-size:16px;line-height:1.5;font-family:inherit;background:var(--card);color:var(--ink);margin-top:10px;resize:none;min-height:58px;user-select:text;-webkit-user-select:text}
 .link-input:focus{outline:2px solid var(--brand);outline-offset:1px;border-color:transparent}
+.ai-input{width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:16px;font-family:inherit;background:var(--card);color:var(--ink);margin:0 0 4px}
+.ai-input:focus{outline:2px solid var(--brand);outline-offset:1px;border-color:transparent}
 #linkModal .box{max-width:520px}
 #linkModal{z-index:60}
+#aiModal{z-index:100}
 .modal{position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:50;display:none;align-items:flex-start;justify-content:center;padding:20px;overflow:auto}
 .modal.open{display:flex}
 .modal .box{background:var(--bg);border-radius:14px;max-width:720px;width:100%;padding:18px;margin:auto}
@@ -367,7 +370,23 @@ input,textarea,button{font-family:inherit}
     <div class="ws-actions">
       <button class="btn" id="wsAddBtn" onclick="addSheetVocab()">＋ 加入生词本</button>
       <button class="btn ghost" id="wsAIRun" onclick="runSheetAI()" style="display:none">AI 语境解释</button>
+      <button class="btn ghost" id="wsAISetup" onclick="openAISetup()" style="display:none">配置 AI</button>
       <button class="btn ghost" onclick="closeWordSheet()">关闭</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="aiModal">
+  <div class="box">
+    <div class="section">
+      <h2>AI 语境解释</h2>
+      <p>填入 Qwen 兼容接口地址和 API Key；Key 只保存在本机浏览器，不会写进网页，也不会发给其他人。</p>
+      <label class="g-label">接口地址</label>
+      <input class="ai-input" id="aiBaseInput" autocomplete="off" spellcheck="false" inputmode="url" placeholder="https://…/compatible-mode/v1">
+      <label class="g-label">API Key</label>
+      <input class="ai-input" id="aiKeyInput" type="password" autocomplete="off" spellcheck="false" placeholder="sk-…">
+      <div class="sync-actions"><button class="btn" onclick="saveAIConfig()">保存并启用</button><button class="btn ghost" onclick="closeAISetup()">取消</button></div>
+      <div id="aiSetupMsg" class="sync-toast sync-error"></div>
     </div>
   </div>
 </div>
@@ -763,7 +782,16 @@ function spkBtn(text){return '<button class="spk" onclick="speak(\''+esc(text).r
 
 /* ---------- 例句点词 / 生词本 ---------- */
 var AI_BASE='https://cet-sprint-auth.cet-sprint.workers.dev';
+var AI_DIRECT_DEFAULT='https://ws-0ha4etpemr33xny3.cn-beijing.maas.aliyuncs.com/compatible-mode/v1';
+var AI_MODEL='qwen-plus';
+var AI_DIRECT_ROOT='';
+var AI_DIRECT_KEY='';
+try{
+  AI_DIRECT_ROOT=localStorage.getItem('cet_ai_root')||AI_DIRECT_DEFAULT;
+  AI_DIRECT_KEY=localStorage.getItem('cet_ai_key')||'';
+}catch(e){AI_DIRECT_ROOT=AI_DIRECT_DEFAULT;}
 var AI_READY=false;
+var AI_FAILED=false;
 var AI_CACHE={};
 var WORD_SHEET=null;
 function normWord(w){return String(w==null?'':w).toLowerCase().replace(/[^a-z0-9'-]/g,'');}
@@ -822,6 +850,37 @@ function sentChips(text,cn,source){
     return '<span class="sent-w'+(hit?' vocab-hit':'')+'" data-w="'+esc(part)+'" data-s="'+esc(raw)+'" data-cn="'+esc(cn||'')+'" data-src="'+esc(source||'')+'">'+esc(part)+'</span>';
   }).join('');
 }
+function aiAvailable(){return !!(AI_READY||AI_DIRECT_KEY);}
+function updateAIButtons(){
+  var on=aiAvailable();
+  var run=document.getElementById('wsAIRun');if(run)run.style.display=on?'':'none';
+  var setup=document.getElementById('wsAISetup');if(setup)setup.style.display=(on&&!AI_FAILED)?'none':'';
+}
+function aiParse(content){
+  content=String(content||'').replace(/```json|```/gi,'').trim();
+  var p=null;try{p=JSON.parse(content);}catch(e){}
+  return {meaning:String((p&&p.meaning)||content||'').slice(0,220),why:String((p&&p.why)||'').slice(0,220)};
+}
+function aiPrompt(d){
+  return [
+    {role:'system',content:'你是英语词汇老师。根据例句语境解释指定单词在本句中的具体含义，不要只给词典第一义。只输出 JSON：{"meaning":"本句中的中文意思","why":"为什么在这个语境里是这个意思"}，两项都用中文，各不超过70字，不要输出 JSON 以外的内容。'},
+    {role:'user',content:'单词：'+d.w+'\n例句：'+d.sentence+(d.cn?'\n例句参考中文：'+d.cn:'')}
+  ];
+}
+function aiDirectRequest(d){
+  var root=String(AI_DIRECT_ROOT||AI_DIRECT_DEFAULT).replace(/\/+$/,'');
+  var url=/\/chat\/completions$/.test(root)?root:root+'/chat/completions';
+  var body={model:AI_MODEL,temperature:0.2,max_tokens:280,messages:aiPrompt(d)};
+  return fetch(url,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+AI_DIRECT_KEY},body:JSON.stringify(body)})
+    .then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error((j&&j.error&&(j.error.message||j.error.code))||('AI HTTP '+r.status));return j;});})
+    .then(function(j){return aiParse(j&&j.choices&&j.choices[0]&&j.choices[0].message&&j.choices[0].message.content);});
+}
+function aiRequest(d){
+  if(AI_DIRECT_KEY)return aiDirectRequest(d);
+  return fetch(AI_BASE+'/define',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({word:d.w,sentence:d.sentence,cn:d.cn})})
+    .then(function(r){return r.json().then(function(j){if(!r.ok||!j.ok)throw new Error((j&&j.error)||('AI HTTP '+r.status));return j;});})
+    .then(function(j){return {meaning:j.meaning||'',why:j.why||''};});
+}
 function vocabList(){
   return Object.keys(state.vocab||{}).map(function(k){return state.vocab[k];}).filter(function(x){return x;}).sort(function(a,b){return (b.added||0)-(a.added||0);});
 }
@@ -847,11 +906,16 @@ function openWordSheet(w,sentence,cn,source){
   if(!w)return;
   var info=findDict(w),low=normWord(w);
   WORD_SHEET={w:info?info.w:w,low:low,ph:(info&&info.ph)||'',m:(info&&info.m)||'',sentence:String(sentence||''),cn:String(cn||''),source:String(source||''),cat:(info&&info.cat)||''};
+  var aiOn=aiAvailable();
+  var aiBox=document.getElementById('wsAI');aiBox.style.display='none';aiBox.innerHTML='';
   document.getElementById('wsWord').textContent=WORD_SHEET.w;
   document.getElementById('wsPh').textContent=WORD_SHEET.ph?'/'+WORD_SHEET.ph+'/':'';
   var meanEl=document.getElementById('wsMean');
   if(WORD_SHEET.m)meanEl.innerHTML='<span class="ws-lab">词义</span>'+esc(WORD_SHEET.m);
-  else{
+  else if(aiOn){
+    meanEl.innerHTML='<span class="ws-lab">词义</span><span style="color:var(--sub);font-weight:400">本地词库未收录，正在用 AI 结合例句解释…</span>';
+    runSheetAI();
+  }else{
     meanEl.innerHTML='<span class="ws-lab">词义</span><span style="color:var(--sub);font-weight:400">本地词库未收录，正在查在线词义…</span>';
     onlineTranslate(w,function(t){
       if(!WORD_SHEET||WORD_SHEET.low!==low||!t)return;
@@ -868,8 +932,7 @@ function openWordSheet(w,sentence,cn,source){
       if(sentEl)sentEl.innerHTML+='<div class="ws-sent-cn">在线整句：'+esc(t)+'</div>';
     });
   }
-  var ai=document.getElementById('wsAI');ai.style.display='none';ai.innerHTML='';
-  var aiBtn=document.getElementById('wsAIRun');aiBtn.style.display=AI_READY?'':'none';
+  updateAIButtons();
   updateSheetAdd();
   document.getElementById('wordSheet').classList.add('open');
 }
@@ -905,26 +968,68 @@ function renderVocab(){
 function runSheetAI(){
   var d=WORD_SHEET;if(!d)return;
   var box=document.getElementById('wsAI');box.style.display='block';
-  if(!AI_READY){box.innerHTML='<b>AI 语境解释</b>AI 还没配置。先用上面的词义和例句中文。';return;}
+  if(!aiAvailable()){
+    box.innerHTML='<b>AI 语境解释</b>还没配置。点「配置 AI」，粘贴一次 Qwen 兼容接口的 Key 就能用。';
+    return;
+  }
   var key=d.low+'|'+d.sentence;
-  if(AI_CACHE[key]){box.innerHTML='<b>AI 语境解释</b>'+esc(AI_CACHE[key].meaning||'')+(AI_CACHE[key].why?'<div style="margin-top:4px;opacity:.85">'+esc(AI_CACHE[key].why)+'</div>':'');return;}
+  if(AI_CACHE[key]){
+    var c=AI_CACHE[key];
+    if(!d.m){var mean0=document.getElementById('wsMean');if(mean0)mean0.innerHTML='<span class="ws-lab">本句词义</span>'+esc(c.meaning||'');}
+    box.innerHTML='<b>AI 语境解释</b>'+esc(c.why||c.meaning||'');
+    return;
+  }
   box.innerHTML='<b>AI 语境解释</b>正在结合例句看上下文…';
-  fetch(AI_BASE+'/define',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({word:d.w,sentence:d.sentence,cn:d.cn})})
-    .then(function(r){return r.json();})
-    .then(function(j){
-      if(!j||!j.ok)throw new Error((j&&j.error)||'AI 暂不可用');
-      AI_CACHE[key]={meaning:j.meaning||'',why:j.why||''};
-      box.innerHTML='<b>AI 语境解释</b>'+esc(j.meaning||'')+(j.why?'<div style="margin-top:4px;opacity:.85">'+esc(j.why)+'</div>':'');
-    })
-    .catch(function(e){box.innerHTML='<b>AI 语境解释</b>暂时用不了：'+esc(String(e.message||e).slice(0,80))+'。先用上面的词义和例句中文。';});
+  aiRequest(d).then(function(j){
+    if(!WORD_SHEET||WORD_SHEET.low!==d.low||WORD_SHEET.sentence!==d.sentence)return;
+    AI_FAILED=false;updateAIButtons();
+    AI_CACHE[key]={meaning:j.meaning||'',why:j.why||''};
+    if(!d.m){var mean=document.getElementById('wsMean');if(mean)mean.innerHTML='<span class="ws-lab">本句词义</span>'+esc(j.meaning||'')+'<div style="color:var(--sub);font-size:11px;font-weight:400;margin-top:3px">AI 结合例句判断</div>';}
+    box.innerHTML='<b>AI 语境解释</b>'+esc(j.why||j.meaning||'');
+  }).catch(function(e){
+    if(!WORD_SHEET||WORD_SHEET.low!==d.low)return;
+    AI_FAILED=true;updateAIButtons();
+    box.innerHTML='<b>AI 语境解释</b>暂时用不了：'+esc(String(e.message||e).slice(0,90));
+    if(!d.m){
+      onlineTranslate(d.w,function(t){
+        if(!WORD_SHEET||WORD_SHEET.low!==d.low||!t)return;
+        var mean=document.getElementById('wsMean');if(mean)mean.innerHTML='<span class="ws-lab">在线词义</span>'+esc(t)+'<div style="color:var(--sub);font-size:11px;font-weight:400;margin-top:3px">在线字典释义，不是语境解释；整句中文见下方。</div>';
+      });
+    }
+  });
 }
 window.runSheetAI=runSheetAI;
 function checkAI(){
   fetch(AI_BASE+'/health',{cache:'no-store'}).then(function(r){return r.json();}).then(function(j){
     AI_READY=!!(j&&j.ai);
-    var aiBtn=document.getElementById('wsAIRun');if(aiBtn&&document.getElementById('wordSheet').classList.contains('open'))aiBtn.style.display=AI_READY?'':'none';
+    updateAIButtons();
   }).catch(function(){});
 }
+function openAISetup(){
+  var base=document.getElementById('aiBaseInput');
+  if(base)base.value=AI_DIRECT_ROOT||AI_DIRECT_DEFAULT;
+  var k=document.getElementById('aiKeyInput');if(k)k.value='';
+  var msg=document.getElementById('aiSetupMsg');if(msg)msg.textContent='';
+  document.getElementById('aiModal').classList.add('open');
+}
+window.openAISetup=openAISetup;
+function closeAISetup(){document.getElementById('aiModal').classList.remove('open');}
+window.closeAISetup=closeAISetup;
+function saveAIConfig(){
+  var url=(document.getElementById('aiBaseInput').value||'').trim();
+  var key=(document.getElementById('aiKeyInput').value||'').trim();
+  var msg=document.getElementById('aiSetupMsg');
+  if(!key){if(msg)msg.textContent='请粘贴 API Key';return;}
+  if(!/^https?:\/\//i.test(url)){if(msg)msg.textContent='接口地址需要以 https:// 开头';return;}
+  AI_DIRECT_ROOT=url.replace(/\/+$/,'');
+  AI_DIRECT_KEY=key;
+  AI_FAILED=false;
+  try{localStorage.setItem('cet_ai_root',AI_DIRECT_ROOT);localStorage.setItem('cet_ai_key',AI_DIRECT_KEY);}catch(e){}
+  closeAISetup();updateAIButtons();
+  if(window.showSyncToast)showSyncToast('AI 语境解释已启用');
+  if(WORD_SHEET)runSheetAI();
+}
+window.saveAIConfig=saveAIConfig;
 document.addEventListener('click',function(e){
   var t=e.target&&e.target.closest?e.target.closest('.sent-w'):null;
   if(!t)return;
@@ -1687,6 +1792,7 @@ window.closeTips=function(){document.getElementById('tipsModal').classList.remov
 document.getElementById('tipsModal').addEventListener('click',function(e){if(e.target===this)closeTips();});
 document.getElementById('syncModal').addEventListener('click',function(e){if(e.target===this)closeSync();});
 document.getElementById('linkModal').addEventListener('click',function(e){if(e.target===this)closeLinkImport();});
+document.getElementById('aiModal').addEventListener('click',function(e){if(e.target===this)closeAISetup();});
 document.getElementById('profileModal').addEventListener('click',function(e){if(e.target===this)closeProfile();});
 
 /* ---------- init ---------- */
